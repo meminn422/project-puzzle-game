@@ -143,12 +143,6 @@ def _draw_bg_office(surface: pygame.Surface):
     # 大型辦公桌
     pygame.draw.rect(surface, (55, 38, 70), (160, HEIGHT * 2 // 5, 600, 22))
     pygame.draw.rect(surface, (42, 28, 55), (160, HEIGHT * 2 // 5 + 22, 600, HEIGHT * 2 // 5))
-    # 桌上散落物品（可收集物品提示）
-    items_pos = [(220, HEIGHT * 2 // 5 - 30), (380, HEIGHT * 2 // 5 - 22),
-                 (540, HEIGHT * 2 // 5 - 28), (690, HEIGHT * 2 // 5 - 20)]
-    item_cols = [(200, 170, 80), (170, 60, 80), (80, 100, 160), (170, 140, 100)]
-    for (ix, iy), ic in zip(items_pos, item_cols):
-        pygame.draw.rect(surface, ic, (ix, iy, 35, 25), border_radius=3)
     # 沙發（右側，小美躲藏的地方）
     pygame.draw.rect(surface, (65, 48, 85), (720, HEIGHT // 2, 200, 110))
     pygame.draw.rect(surface, (80, 60, 100), (720, HEIGHT // 2, 200, 22))
