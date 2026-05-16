@@ -155,7 +155,11 @@ def _render_wrapped_segments(surface, segments, font, x, y, max_width, line_heig
             i = j
 
     for ch, is_red in char_list:
-        # 計算加入這個字元後的行寬
+        if ch == "\n":
+            flush_line(line, cy)
+            cy += line_height
+            line = []
+            continue
         test_str = "".join(c for c, _ in line) + ch
         if font.size(test_str)[0] > max_width and line:
             flush_line(line, cy)
@@ -576,14 +580,7 @@ class DialogueBox:
         # ── 2. 對話框背景 + 邊框 ──
         _draw_rounded_rect(surface, PANEL_BG, (px, py, pw, ph), 16)
         # 警告特效：邊框在紅色和正常色之間閃爍
-        bc = PANEL_BORDER
-        if self._warn_timer > 0 and (pygame.time.get_ticks() // 80) % 2 == 0:
-            bc = WARN_RED
-            # 額外紅色光暈
-            glow = pygame.Surface((pw + 24, ph + 24), pygame.SRCALPHA)
-            pygame.draw.rect(glow, (255, 50, 50, 55),
-                             glow.get_rect(), border_radius=20)
-            surface.blit(glow, (px - 12, py - 12))
+        bc = WARN_RED if self._warn_timer > 0 else PANEL_BORDER
         _draw_rounded_border(surface, bc, (px, py, pw, ph), 16, 2)
 
         # ── 3. 說話者名牌 ──
@@ -660,15 +657,11 @@ class DialogueBox:
         btn_y = py + self.PANEL_H - btn_h - 16
 
         if not self._lab_done:
-            # 灰色按鈕，不可點擊
             _draw_rounded_rect(surface, (*LAB_GRAY, 200), (btn_x, btn_y, btn_w, btn_h), 8)
-            # 跳動省略號動畫（每 20 幀換一格）
-            dots = "." * ((self._lab_timer // 20) % 4)
-            txt  = font.render(f"化驗中{dots}", True, (200, 210, 220))
+            txt = font.render("化驗中", True, (200, 210, 220))
         else:
-            # 綠色按鈕，完成
             _draw_rounded_rect(surface, (*LAB_GREEN, 220), (btn_x, btn_y, btn_w, btn_h), 8)
-            txt = font.render("✓ 化驗完成", True, (240, 255, 240))
+            txt = font.render("已完成化驗", True, (240, 255, 240))
 
         surface.blit(txt, (btn_x + btn_w // 2 - txt.get_width() // 2,
                            btn_y + btn_h // 2 - txt.get_height() // 2))

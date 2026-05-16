@@ -461,23 +461,7 @@ class InventoryUI:
             surface.blit(pygame.transform.scale(img, (self.ICON_S, self.ICON_S)),
                          (ix, iy))
         else:
-            icon_colors = {
-                "item_001_envelope": (200, 180,  90),
-                "item_002_wine"    : (160,  40,  60),
-                "item_003_watch"   : (100, 120, 160),
-                "item_004_report"  : ( 60, 160, 100),
-                "item_005_key"     : (200, 160,  40),
-                "item_006_heel"    : (200, 100, 160),
-                "item_007_will"    : (160, 140, 100),
-                "item_008_paint"   : (180,  60,  60),
-            }
-            ic = icon_colors.get(item_id, (100, 100, 140))
-            pygame.draw.rect(surface, ic,
-                             (ix, iy, self.ICON_S, self.ICON_S), border_radius=6)
-            abbr = f_hint.render(item_id[-3:], True, (240, 240, 240))
-            surface.blit(abbr,
-                         (ix + self.ICON_S // 2 - abbr.get_width() // 2,
-                          iy + self.ICON_S // 2 - abbr.get_height() // 2))
+            self._draw_item_icon(surface, item_id, ix, iy, self.ICON_S)
 
         # 道具名稱
         tx   = ix + self.ICON_S + 8
@@ -495,6 +479,137 @@ class InventoryUI:
             desc += "…"
         ds = f_hint.render(desc, True, HINT_COL)
         surface.blit(ds, (tx, sr.y + 30))
+
+    def _draw_item_icon(self, surface: pygame.Surface,
+                        item_id: str, x: int, y: int, s: int):
+        """每個道具用 pygame 繪圖指令畫出辨識圖示，s = 正方形邊長。"""
+        cx, cy = x + s // 2, y + s // 2
+
+        if item_id == "item_001_envelope":
+            # 信封：米黃底 + 撕裂開口
+            pygame.draw.rect(surface, (210, 190, 100), (x+4, y+12, s-8, s-18), border_radius=2)
+            # 撕裂鋸齒上緣
+            pts = [(x+4, y+12), (x+10, y+8), (x+16, y+14), (x+22, y+7),
+                   (x+28, y+13), (x+34, y+8), (x+s-4, y+12)]
+            pygame.draw.lines(surface, (180, 50, 50), False, pts, 2)
+            # 信封底部 V 形折痕
+            mx = x + s // 2
+            pygame.draw.line(surface, (170, 150, 70), (x+4, y+s-6), (mx, y+24), 1)
+            pygame.draw.line(surface, (170, 150, 70), (x+s-4, y+s-6), (mx, y+24), 1)
+
+        elif item_id == "item_002_wine":
+            # 紅酒杯：傾倒並有酒液灑出
+            # 杯身
+            pygame.draw.polygon(surface, (140, 30, 50),
+                                [(cx-10, y+6), (cx+10, y+6),
+                                 (cx+6, y+26), (cx-6, y+26)])
+            # 杯腳
+            pygame.draw.line(surface, (140, 30, 50), (cx, y+26), (cx, y+38), 2)
+            pygame.draw.line(surface, (140, 30, 50), (cx-8, y+38), (cx+8, y+38), 2)
+            # 灑出的酒液
+            pygame.draw.ellipse(surface, (160, 40, 60, 180),
+                                 pygame.Rect(x+2, y+28, 22, 10))
+            pygame.draw.ellipse(surface, (180, 50, 70),
+                                 pygame.Rect(x+4, y+30, 10, 6))
+
+        elif item_id == "item_003_watch":
+            # 手錶：錶面 + 停止的指針
+            # 錶帶
+            pygame.draw.rect(surface, (60, 50, 40), (cx-6, y+2, 12, 10), border_radius=2)
+            pygame.draw.rect(surface, (60, 50, 40), (cx-6, y+s-12, 12, 10), border_radius=2)
+            # 錶殼
+            pygame.draw.circle(surface, (180, 175, 165), (cx, cy), 16)
+            pygame.draw.circle(surface, (100, 95, 85), (cx, cy), 16, 2)
+            # 時針（指向 10 點方向，已停止）
+            pygame.draw.line(surface, (40, 40, 40), (cx, cy),
+                             (cx - 7, cy - 9), 2)
+            # 分針（指向 3 點方向）
+            pygame.draw.line(surface, (40, 40, 40), (cx, cy),
+                             (cx + 11, cy), 1)
+            # 錶殼刮痕
+            pygame.draw.line(surface, (200, 80, 80),
+                             (cx+8, cy-10), (cx+14, cy+4), 1)
+
+        elif item_id == "item_004_report":
+            # 化驗報告：文件 + 數據折線圖
+            pygame.draw.rect(surface, (235, 235, 220), (x+6, y+4, s-12, s-8), border_radius=2)
+            pygame.draw.rect(surface, (150, 150, 130), (x+6, y+4, s-12, s-8), 1, border_radius=2)
+            # 文字橫線
+            for row in range(3):
+                pygame.draw.line(surface, (160, 160, 140),
+                                 (x+10, y+14+row*6), (x+s-10, y+14+row*6), 1)
+            # 折線圖
+            pts = [(x+10, y+34), (x+17, y+28), (x+24, y+32),
+                   (x+31, y+24), (x+s-10, y+30)]
+            pygame.draw.lines(surface, (60, 160, 100), False, pts, 2)
+            # 資料點
+            for p in pts:
+                pygame.draw.circle(surface, (40, 130, 80), p, 2)
+
+        elif item_id == "item_005_key":
+            # 鑰匙：圓環 + 鑰匙桿 + 鋸齒
+            pygame.draw.circle(surface, (200, 165, 40), (cx-8, cy-6), 10, 0)
+            pygame.draw.circle(surface, (50, 40, 20), (cx-8, cy-6), 10, 2)
+            pygame.draw.circle(surface, (50, 40, 20), (cx-8, cy-6), 5, 0)
+            # 鑰匙桿
+            pygame.draw.line(surface, (200, 165, 40), (cx+2, cy-6), (cx+18, cy-6), 4)
+            # 鋸齒
+            for i, dy in enumerate([4, 7]):
+                bx = cx + 8 + i * 5
+                pygame.draw.line(surface, (200, 165, 40),
+                                 (bx, cy-6), (bx, cy-6+dy), 3)
+
+        elif item_id == "item_006_heel":
+            # 高跟鞋碎片：只剩跟部的碎片
+            # 鞋跟
+            pygame.draw.polygon(surface, (180, 80, 120),
+                                [(cx-4, y+10), (cx+4, y+10),
+                                 (cx+3, y+s-8), (cx-3, y+s-8)])
+            # 鞋底橫板（已斷裂）
+            pygame.draw.rect(surface, (180, 80, 120), (cx-12, y+8, 24, 5), border_radius=1)
+            # 裂縫
+            pygame.draw.line(surface, (240, 200, 220),
+                             (cx+2, y+10), (cx+8, y+22), 1)
+            pygame.draw.line(surface, (240, 200, 220),
+                             (cx-3, y+18), (cx+3, y+30), 1)
+            # 碎裂邊緣高光
+            pygame.draw.line(surface, (220, 120, 160),
+                             (cx-12, y+8), (cx-8, y+8), 2)
+
+        elif item_id == "item_007_will":
+            # 原始遺囑：捲軸
+            # 捲軸上下圓柱
+            pygame.draw.rect(surface, (200, 185, 140), (x+8, y+6, s-16, s-12))
+            pygame.draw.ellipse(surface, (210, 195, 150), (x+8, y+2, s-16, 10))
+            pygame.draw.ellipse(surface, (190, 175, 130), (x+8, y+s-16, s-16, 10))
+            pygame.draw.ellipse(surface, (170, 150, 100), (x+8, y+2, s-16, 10), 1)
+            pygame.draw.ellipse(surface, (170, 150, 100), (x+8, y+s-16, s-16, 10), 1)
+            # 文字橫線
+            for row in range(4):
+                pygame.draw.line(surface, (120, 100, 70),
+                                 (x+13, y+14+row*6), (x+s-13, y+14+row*6), 1)
+            # 印章（紅色）
+            pygame.draw.circle(surface, (180, 50, 50), (cx+8, cy+8), 6)
+            pygame.draw.circle(surface, (210, 80, 80), (cx+8, cy+8), 6, 1)
+
+        elif item_id == "item_008_paint":
+            # 紅色烤漆碎片：不規則碎片形狀
+            pts = [(cx-10, cy-14), (cx+8, cy-10), (cx+14, cy),
+                   (cx+6, cy+12), (cx-8, cy+14), (cx-14, cy+4)]
+            pygame.draw.polygon(surface, (180, 45, 45), pts)
+            pygame.draw.polygon(surface, (220, 80, 80), pts, 2)
+            # 高光（碎裂反光）
+            pygame.draw.line(surface, (240, 140, 140),
+                             (cx-8, cy-12), (cx+4, cy-8), 2)
+            pygame.draw.line(surface, (240, 140, 140),
+                             (cx+10, cy-4), (cx+12, cy+6), 1)
+
+        else:
+            # 未知道具：通用圖示
+            pygame.draw.rect(surface, (100, 100, 140),
+                             (x+4, y+4, s-8, s-8), border_radius=6)
+            pygame.draw.rect(surface, (140, 140, 180),
+                             (x+4, y+4, s-8, s-8), 1, border_radius=6)
 
     def _draw_scrollbar(self, surface: pygame.Surface, pr: pygame.Rect):
         """

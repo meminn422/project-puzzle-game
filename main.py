@@ -376,12 +376,18 @@ class GameScene:
         # UI 狀態
         self._hover_npc : NPC | None = None    # 目前滑鼠 hover 的 NPC
 
+        # 場景解鎖通知
+        self._notif_text  = ""
+        self._notif_timer = 0   # 倒數幀數，0 = 不顯示
+
     # ── 回呼函式 ─────────────────────────────────────────────
 
     def _cb_keyword_found(self, keyword: str):
         """對話框廣播關鍵字 → 加入推理引擎線索池。"""
         print(f"[Scene] 關鍵字記錄：{keyword}")
         self.de_engine.add_clue(keyword)
+        if keyword == "小美目擊老陳下藥":
+            self.gs.set_flag("got_mei_testimony")
 
     def _cb_give_item(self, item_id: str):
         """對話框廣播給予道具 → 加入背包。"""
@@ -390,10 +396,13 @@ class GameScene:
             print(f"[Scene] 取得道具：{ITEM_DATABASE.get(item_id, {}).get('name', item_id)}")
 
     def _cb_unlock_stage(self, scene_id: str):
-        """對話框廣播解鎖場景 → 設定旗標（允許進入）。"""
+        """對話框廣播解鎖場景 → 設定旗標並顯示通知。"""
         print(f"[Scene] 解鎖場景：{scene_id}")
-        self.gs.is_stage_unlocked.__func__  # 只是驗證存在
         self.gs.set_flag(f"stage_{scene_id}_unlocked")
+        name = SCENES.get(scene_id, {}).get("name", scene_id)
+        self._notif_text  = f"新場景解鎖　{name}"
+        self._notif_timer = 240   # 4 秒
+        self.rm.play_sound("sfx_clue_found")
 
     def _cb_dialogue_close(self):
         """對話框關閉 → 清除 hover 狀態。"""
@@ -497,6 +506,9 @@ class GameScene:
                     if npc.is_clicked(mouse_pos):
                         self._interact_with_npc(npc)
                         break
+                # 書房：點擊道具區域撿取
+                if self.gs.current_stage == "study":
+                    self._try_find_study_item(mouse_pos)
                 # 第三階段辦公室：點擊道具擺放區域搜索道具
                 if self.gs.current_stage == "office":
                     self._try_find_item(mouse_pos)
@@ -548,6 +560,13 @@ class GameScene:
     #     TypeError: unhashable type: 'pygame.rect.Rect'
     #   解決方式：改用 list of tuple，座標存成純數字，
     #   碰撞偵測時再臨時建立 pygame.Rect，用完即丟。
+    _STUDY_ITEM_ZONES = [
+        # ( x,   y,   w,   h,  item_id,            旁白節點)
+        (310, 375, 65, 40, "item_001_envelope", "study_find_envelope"),
+        (553, 298, 52, 48, "item_002_wine",     "study_find_wine"),
+        (425, 335, 65, 35, "item_003_watch",    "study_find_watch"),
+    ]
+
     _OFFICE_ITEM_ZONES = [
         # ( x,   y,   w,  h,   item_id,          旁白節點)
         (205, 350, 55, 40, "item_005_key",   None),
@@ -555,6 +574,16 @@ class GameScene:
         (525, 352, 55, 38, "item_007_will",  "office_find_will"),
         (675, 360, 55, 35, "item_006_heel",  "office_find_heel"),
     ]
+
+    def _try_find_study_item(self, pos: tuple):
+        for x, y, w, h, item_id, narration in self._STUDY_ITEM_ZONES:
+            if pygame.Rect(x, y, w, h).collidepoint(pos) and not self.gs.has_item(item_id):
+                self.gs.add_item(item_id)
+                self.rm.play_sound("sfx_item_get")
+                print(f"[Scene] 發現並取得：{ITEM_DATABASE[item_id]['name']}")
+                if narration:
+                    self.dialogue_box.open(narration, npc=None)
+                return
 
     def _try_find_item(self, pos: tuple):
         """
@@ -582,6 +611,8 @@ class GameScene:
         for npc in self._current_npcs():
             npc.update()
         self.dialogue_box.update()
+        if self._notif_timer > 0:
+            self._notif_timer -= 1
 
     # ── 繪製 ─────────────────────────────────────────────────
 
@@ -599,6 +630,9 @@ class GameScene:
         """
         draw_scene_background(screen, self.rm, self.gs.current_stage)
 
+        # 書房：道具拾取提示
+        if self.gs.current_stage == "study":
+            self._draw_study_hints()
         # 辦公室：道具拾取提示（高亮點擊區域）
         if self.gs.current_stage == "office":
             self._draw_office_hints()
@@ -628,19 +662,142 @@ class GameScene:
         self.inventory_ui.draw(screen)
         self.dialogue_box.draw(screen)
         self.de_screen.draw(screen)
+        self._draw_unlock_notif(screen)
+
+    def _draw_study_hints(self):
+        alpha = 180 + int(60 * math.sin(pygame.time.get_ticks() / 300))
+        for x, y, w, h, item_id, _ in self._STUDY_ITEM_ZONES:
+            if self.gs.has_item(item_id):
+                continue
+            surf = pygame.Surface((w, h), pygame.SRCALPHA)
+            surf.fill((255, 230, 100, 35))
+            pygame.draw.rect(surf, (255, 220, 80, alpha),
+                             surf.get_rect(), 2, border_radius=4)
+            screen.blit(surf, (x, y))
+            self._draw_scene_item_icon(screen, item_id, x, y, w, h)
+
+    def _draw_scene_item_icon(self, surface: pygame.Surface,
+                              item_id: str, x: int, y: int, w: int, h: int):
+        cx, cy = x + w // 2, y + h // 2
+
+        if item_id == "item_001_envelope":
+            # 信封
+            pygame.draw.rect(surface, (210, 190, 100), (x+6, y+8, w-12, h-14))
+            pygame.draw.rect(surface, (180, 160, 70),  (x+6, y+8, w-12, h-14), 1)
+            mx = x + w // 2
+            pygame.draw.line(surface, (170, 150, 60), (x+6, y+8),  (mx, cy-2), 1)
+            pygame.draw.line(surface, (170, 150, 60), (x+w-6, y+8), (mx, cy-2), 1)
+            # 撕裂口
+            pts = [(x+8, y+8), (x+14, y+4), (x+20, y+9), (x+26, y+4), (x+w-8, y+8)]
+            pygame.draw.lines(surface, (200, 60, 60), False, pts, 2)
+
+        elif item_id == "item_002_wine":
+            # 酒杯（傾倒）
+            pygame.draw.polygon(surface, (140, 30, 50),
+                                [(cx-9, y+4), (cx+9, y+4),
+                                 (cx+5, y+20), (cx-5, y+20)])
+            pygame.draw.line(surface, (140, 30, 50), (cx, y+20), (cx, y+32), 2)
+            pygame.draw.line(surface, (140, 30, 50), (cx-7, y+32), (cx+7, y+32), 2)
+            pygame.draw.ellipse(surface, (160, 40, 60), (x+4, y+24, 20, 8))
+
+        elif item_id == "item_003_watch":
+            # 手錶
+            pygame.draw.rect(surface, (60, 50, 40), (cx-5, y+4, 10, 7), border_radius=2)
+            pygame.draw.rect(surface, (60, 50, 40), (cx-5, y+h-11, 10, 7), border_radius=2)
+            pygame.draw.circle(surface, (180, 175, 165), (cx, cy), 12)
+            pygame.draw.circle(surface, (100, 95, 85),   (cx, cy), 12, 2)
+            pygame.draw.line(surface, (40, 40, 40), (cx, cy), (cx-6, cy-8), 2)
+            pygame.draw.line(surface, (40, 40, 40), (cx, cy), (cx+9, cy),   1)
+            pygame.draw.line(surface, (180, 60, 60), (cx+5, cy-8), (cx+11, cy+2), 1)
+
+        elif item_id == "item_005_key":
+            # 鑰匙
+            pygame.draw.circle(surface, (200, 165, 40), (cx-8, cy-4), 8, 0)
+            pygame.draw.circle(surface, (50, 40, 20),   (cx-8, cy-4), 8, 2)
+            pygame.draw.circle(surface, (50, 40, 20),   (cx-8, cy-4), 4, 0)
+            pygame.draw.line(surface, (200, 165, 40), (cx, cy-4), (cx+14, cy-4), 3)
+            for i, dy in enumerate([4, 6]):
+                bx = cx + 6 + i * 5
+                pygame.draw.line(surface, (200, 165, 40), (bx, cy-4), (bx, cy-4+dy), 2)
+
+        elif item_id == "item_006_heel":
+            # 高跟鞋碎片
+            pygame.draw.polygon(surface, (180, 80, 120),
+                                [(cx-3, y+8), (cx+3, y+8),
+                                 (cx+2, y+h-6), (cx-2, y+h-6)])
+            pygame.draw.rect(surface, (180, 80, 120), (cx-10, y+6, 20, 4), border_radius=1)
+            pygame.draw.line(surface, (240, 180, 210), (cx+1, y+10), (cx+6, y+20), 1)
+
+        elif item_id == "item_007_will":
+            # 遺囑捲軸
+            pygame.draw.rect(surface, (200, 185, 140), (x+6, y+4, w-12, h-8))
+            pygame.draw.ellipse(surface, (210, 195, 150), (x+6, y+1,  w-12, 8))
+            pygame.draw.ellipse(surface, (210, 195, 150), (x+6, y+h-9, w-12, 8))
+            pygame.draw.ellipse(surface, (170, 150, 100), (x+6, y+1,  w-12, 8), 1)
+            pygame.draw.ellipse(surface, (170, 150, 100), (x+6, y+h-9, w-12, 8), 1)
+            for row in range(3):
+                pygame.draw.line(surface, (120, 100, 70),
+                                 (x+10, y+10+row*5), (x+w-10, y+10+row*5), 1)
+            pygame.draw.circle(surface, (180, 50, 50), (cx+6, cy+6), 5)
+
+        elif item_id == "item_008_paint":
+            # 紅色烤漆碎片
+            pts = [(cx-8, cy-10), (cx+6, cy-7), (cx+10, cy+1),
+                   (cx+4, cy+9), (cx-6, cy+10), (cx-10, cy+2)]
+            pygame.draw.polygon(surface, (180, 45, 45), pts)
+            pygame.draw.polygon(surface, (220, 80, 80), pts, 2)
+            pygame.draw.line(surface, (240, 130, 130), (cx-6, cy-8), (cx+2, cy-5), 2)
+
+    def _draw_unlock_notif(self, surface: pygame.Surface):
+        if self._notif_timer <= 0:
+            return
+
+        t = self._notif_timer
+        TOTAL = 240
+
+        # 滑入（前 20 幀）/ 停留 / 滑出（後 20 幀）
+        if t > TOTAL - 20:
+            progress = (TOTAL - t) / 20
+            y = int(-60 + 60 * progress)
+        elif t < 20:
+            progress = t / 20
+            y = int(-60 + 60 * progress)
+        else:
+            y = 0
+
+        # 淡出 alpha
+        alpha = 255 if t > 20 else int(255 * t / 20)
+
+        font  = self.rm.font("default", 20)
+        label = font.render(self._notif_text, True, (255, 235, 120))
+        w     = label.get_width() + 48
+        x     = WIDTH // 2 - w // 2
+        top   = 46 + y   # HUD 高度 38px 下方
+
+        banner = pygame.Surface((w, 48), pygame.SRCALPHA)
+        banner.fill((28, 22, 8, int(alpha * 0.88)))
+        pygame.draw.rect(banner, (200, 160, 40, alpha),
+                         banner.get_rect(), 2, border_radius=10)
+        # 左側鑰匙圖示
+        pygame.draw.circle(banner, (200, 160, 40, alpha), (20, 24), 9, 2)
+        pygame.draw.circle(banner, (200, 160, 40, alpha), (20, 24), 4)
+        pygame.draw.line(banner,  (200, 160, 40, alpha), (29, 24), (44, 24), 3)
+        pygame.draw.line(banner,  (200, 160, 40, alpha), (38, 24), (38, 30), 2)
+        banner.blit(label, (48, 24 - label.get_height() // 2))
+        surface.blit(banner, (x, top))
 
     def _draw_office_hints(self):
         """辦公室場景：在可拾取區域畫閃爍高亮提示。"""
-        tick = (pygame.time.get_ticks() // 600) % 2
-        if tick == 0:
-            return
-        hint_surf = pygame.Surface((55, 40), pygame.SRCALPHA)
-        hint_surf.fill((255, 230, 100, 55))
-        pygame.draw.rect(hint_surf, (255, 220, 80, 130),
-                         hint_surf.get_rect(), 2, border_radius=4)
+        alpha = 180 + int(60 * math.sin(pygame.time.get_ticks() / 300))
         for x, y, w, h, item_id, _ in self._OFFICE_ITEM_ZONES:
-            if not self.gs.has_item(item_id):
-                screen.blit(hint_surf, (x, y))
+            if self.gs.has_item(item_id):
+                continue
+            surf = pygame.Surface((w, h), pygame.SRCALPHA)
+            surf.fill((255, 230, 100, 35))
+            pygame.draw.rect(surf, (255, 220, 80, alpha),
+                             surf.get_rect(), 2, border_radius=4)
+            screen.blit(surf, (x, y))
+            self._draw_scene_item_icon(screen, item_id, x, y, w, h)
 
 
 # ══════════════════════════════════════════════════════════════

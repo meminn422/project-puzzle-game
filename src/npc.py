@@ -93,6 +93,14 @@ class DialogueEngine:
             item_map = self.npc_data.get("item_triggers", {})
             if item_presented in item_map:
                 return item_map[item_presented]
+
+            cond_item_map = self.npc_data.get("cond_item_triggers", {})
+            if item_presented in cond_item_map:
+                entry = cond_item_map[item_presented]
+                if self.gs.has_flag(entry["need_flag"]):
+                    return entry["node"]
+                else:
+                    return entry["fallback"]
             # 出示了道具但此 NPC 無對應設定 → 繼續往下
 
         # ── 優先級 2：條件層（自動偵測背包/旗標）──────────

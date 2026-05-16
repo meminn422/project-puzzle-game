@@ -102,7 +102,7 @@ DIALOGUE_DATA = {
     "chen_default": {
         "speaker"    : "偵探",
         "emotion"    : "normal",
-        "text"       : "陳先生，老爺過世時，你是第一個發現的人吧？\n當時書房的情況如何？",
+        "text"       : "陳先生，老爺過世時，你是第一個發現的人吧？當時書房的情況如何？",
         "next"       : "chen_default_chen",   # 接老陳的回應
         "options"    : [],
         "keyword"    : None,
@@ -112,10 +112,20 @@ DIALOGUE_DATA = {
     "chen_default_chen": {
         "speaker"    : "管家・老陳",
         "emotion"    : "normal",
-        "text"       : "是的…我進來送茶，就看到老爺伏在案上。\n他平時身體很好，昨晚九點還在讀報，我也就沒進去打擾了。",
-        "next"       : "chen_default_2",
+        "text"       : "是的…我進來送茶，就看到老爺伏在案上。他平時身體很好，昨晚九點還在讀報，我也就沒進去打擾了。",
+        "next"       : "chen_default_1b",
         "options"    : [],
         "keyword"    : None,
+        "give_item"  : None,
+        "unlock_stage": None,
+    },
+    "chen_default_1b": {
+        "speaker"    : "偵探・OS",
+        "emotion"    : "normal",
+        "text"       : "（九點…但死者的手錶停在十點十五分。）你當時沒聽到什麼奇怪的聲音嗎？",
+        "next"       : "chen_default_2",
+        "options"    : [],
+        "keyword"    : "時間矛盾",
         "give_item"  : None,
         "unlock_stage": None,
     },
@@ -125,8 +135,7 @@ DIALOGUE_DATA = {
         "text"       : "老爺喜歡安靜，書房隔音很好，我真的什麼都沒聽到。",
         "next"       : None,
         "options"    : [
-            {"label": "（記下）九點…但手錶停在十點十五分", "next": "chen_os_watch"},
-            {"label": "你整晚都在府上嗎？",                 "next": "chen_alibi"},
+            {"label": "你整晚都在府上嗎？", "next": "chen_alibi"},
         ],
         "keyword"    : "老陳的證詞（九點）",
         "give_item"  : None,
@@ -135,7 +144,7 @@ DIALOGUE_DATA = {
     "chen_os_watch": {
         "speaker"    : "偵探・OS",
         "emotion"    : "normal",
-        "text"       : "（九點…但死者的手錶停在十點十五分。\n這中間，發生了什麼？）",
+        "text"       : "（九點…但死者的手錶停在十點十五分。這中間，發生了什麼？）",
         "next"       : None,
         "options"    : [],
         "keyword"    : "時間矛盾",
@@ -157,7 +166,7 @@ DIALOGUE_DATA = {
     "chen_item_envelope_1": {
         "speaker"    : "偵探",
         "emotion"    : "normal",
-        "text"       : "我在桌下發現了這個。\n封口處有[RED]被粗暴撕開的痕跡[/RED]，這不是老爺平時拆信的習慣。\n這封信原定是要寄給律師的吧？",
+        "text"       : "我在桌下發現了這個。封口處有[RED]被粗暴撕開的痕跡[/RED]，這不是老爺平時拆信的習慣。這封信原定是要寄給律師的吧？",
         "next"       : "chen_item_envelope_2",
         "options"    : [],
         "keyword"    : None,
@@ -167,7 +176,7 @@ DIALOGUE_DATA = {
     "chen_item_envelope_2": {
         "speaker"    : "管家・老陳",
         "emotion"    : "panic",
-        "text"       : "這…這不是老爺要給律師的密函嗎？\n怎麼會在你手裡？",
+        "text"       : "這…這不是老爺要給律師的密函嗎？怎麼會在你手裡？",
         "next"       : "chen_item_envelope_3",
         "options"    : [],
         "keyword"    : "密函下落",
@@ -182,7 +191,7 @@ DIALOGUE_DATA = {
     "chen_item_envelope_3": {
         "speaker"    : "偵探",
         "emotion"    : "normal",
-        "text"       : "看來有人急著想知道信裡的內容。\n老陳，你的冷靜到此為止了——\n把辦公室的鑰匙交出來。",
+        "text"       : "看來有人急著想知道信裡的內容。老陳，你的冷靜到此為止了，把辦公室的鑰匙交出來。",
         "next"       : "chen_item_envelope_4",
         "options"    : [],
         "keyword"    : None,
@@ -192,19 +201,19 @@ DIALOGUE_DATA = {
     "chen_item_envelope_4": {
         "speaker"    : "管家・老陳",
         "emotion"    : "nervous",
-        "text"       : "（顫抖著從懷裡掏出鑰匙）\n那是二樓的私人辦公室…\n請務必查清楚，我真的不希望是我想的那樣。",
+        "text"       : "（顫抖著從懷裡掏出鑰匙）那是二樓的私人辦公室…請務必查清楚，我真的不希望是我想的那樣。",
         "next"       : None,
         "options"    : [],
         "keyword"    : "辦公室鑰匙取得",
-        "give_item"  : "item_005_key",    # ★ 給予鑰匙道具
-        "unlock_stage": None,
+        "give_item"  : "item_005_key",
+        "unlock_stage": "police",
     },
 
     # 出示錯誤道具（手錶）給老陳
     "chen_item_watch_wrong": {
         "speaker"    : "管家・老陳",
         "emotion"    : "nervous",
-        "text"       : "那個手錶…有什麼問題嗎？\n（眉頭微皺，顯得警戒）",
+        "text"       : "那個手錶…有什麼問題嗎？（眉頭微皺，顯得警戒）",
         "next"       : None,
         "options"    : [],
         "keyword"    : None,
@@ -218,7 +227,7 @@ DIALOGUE_DATA = {
     "chen_item_wine_wrong": {
         "speaker"    : "管家・老陳",
         "emotion"    : "nervous",
-        "text"       : "那只是老爺平時喝的酒…\n你是在懷疑我嗎？",
+        "text"       : "那只是老爺平時喝的酒…你是在懷疑我嗎？",
         "next"       : None,
         "options"    : [],
         "keyword"    : None,
@@ -228,6 +237,38 @@ DIALOGUE_DATA = {
         "trust_delta": -8,
     },
 
+    # 書房道具撿取旁白
+    "study_find_envelope": {
+        "speaker"    : "偵探・OS",
+        "emotion"    : "normal",
+        "text"       : "（桌下有一個[RED]被粗暴撕開的信封[/RED]。封口痕跡不像是老爺平時拆信的手法。這封信，原定是要寄給律師的。）",
+        "next"       : None,
+        "options"    : [],
+        "keyword"    : None,
+        "give_item"  : None,
+        "unlock_stage": None,
+    },
+    "study_find_wine": {
+        "speaker"    : "偵探・OS",
+        "emotion"    : "normal",
+        "text"       : "（[RED]打翻的紅酒杯[/RED]。杯底還有殘留液體，散發著一股異味……不只是酒的氣味。）",
+        "next"       : None,
+        "options"    : [],
+        "keyword"    : None,
+        "give_item"  : None,
+        "unlock_stage": None,
+    },
+    "study_find_watch": {
+        "speaker"    : "偵探・OS",
+        "emotion"    : "normal",
+        "text"       : "（[RED]死者的手錶[/RED]，停在十點十五分。錶殼上有明顯的刮痕，這是掙扎時留下的。）",
+        "next"       : None,
+        "options"    : [],
+        "keyword"    : None,
+        "give_item"  : None,
+        "unlock_stage": None,
+    },
+
     # ──────────────────────────────────────────────────────────
     # 第二階段：警局  NPC_003 凱文（鑑識專家）
     # ──────────────────────────────────────────────────────────
@@ -235,7 +276,7 @@ DIALOGUE_DATA = {
     "kevin_default": {
         "speaker"    : "鑑識專家・凱文",
         "emotion"    : "normal",
-        "text"       : "偵探，有什麼需要我鑑定的嗎？\n我剛整理好上一份報告。",
+        "text"       : "偵探，有什麼需要我鑑定的嗎？我剛整理好上一份報告。",
         "next"       : None,
         "options"    : [],
         "keyword"    : None,
@@ -247,13 +288,12 @@ DIALOGUE_DATA = {
     "kevin_item_wine_1": {
         "speaker"    : "偵探",
         "emotion"    : "normal",
-        "text"       : "凱文，我需要這杯子裡的殘留物分析。\n老爺子的死因可能就在這幾滴酒裡。",
-        "next"       : "kevin_item_wine_lab",   # 特殊：觸發化驗動畫
+        "text"       : "凱文，我需要這杯子裡的殘留物分析。老爺子的死因可能就在這幾滴酒裡。",
+        "next"       : "kevin_item_wine_lab",
         "options"    : [],
         "keyword"    : None,
         "give_item"  : None,
         "unlock_stage": None,
-        "special_anim": "lab_analysis",  # ★ 觸發化驗動畫
     },
     "kevin_item_wine_lab": {
         "speaker"    : "系統",
@@ -264,12 +304,13 @@ DIALOGUE_DATA = {
         "keyword"    : None,
         "give_item"  : None,
         "unlock_stage": None,
-        "wait_seconds": 3,   # ★ 等待 3 秒後自動推進
+        "special_anim": "lab_analysis",
+        "wait_seconds": 5,
     },
     "kevin_item_wine_2": {
         "speaker"    : "鑑識專家・凱文",
         "emotion"    : "normal",
-        "text"       : "稍等…儀器報告出來了。\n酒裡混了高濃度的[RED]強力鎮定劑[/RED]。",
+        "text"       : "稍等…儀器報告出來了。酒裡混了高濃度的[RED]強力鎮定劑[/RED]。",
         "next"       : "kevin_item_wine_3",
         "options"    : [],
         "keyword"    : "強力鎮定劑",
@@ -279,7 +320,7 @@ DIALOGUE_DATA = {
     "kevin_item_wine_3": {
         "speaker"    : "偵探",
         "emotion"    : "normal",
-        "text"       : "鎮定劑？\n如果劑量夠大，確實能引發心臟停跳。謝了。",
+        "text"       : "鎮定劑？如果劑量夠大，確實能引發心臟停跳。謝了。",
         "next"       : None,
         "options"    : [],
         "keyword"    : None,
@@ -306,7 +347,7 @@ DIALOGUE_DATA = {
     "sara_default": {
         "speaker"    : "法醫・莎拉",
         "emotion"    : "normal",
-        "text"       : "我正在整理屍檢報告。\n你想了解哪方面的資訊？",
+        "text"       : "我正在整理屍檢報告。你想了解哪方面的資訊？",
         "next"       : None,
         "options"    : [],
         "keyword"    : None,
@@ -318,7 +359,7 @@ DIALOGUE_DATA = {
     "sara_item_report_1": {
         "speaker"    : "偵探",
         "emotion"    : "normal",
-        "text"       : "莎拉，化驗報告證實了酒裡有藥物。\n這跟妳的屍檢結果吻合嗎？",
+        "text"       : "莎拉，化驗報告證實了酒裡有藥物。這跟妳的屍檢結果吻合嗎？",
         "next"       : "sara_item_report_2",
         "options"    : [],
         "keyword"    : None,
@@ -328,7 +369,7 @@ DIALOGUE_DATA = {
     "sara_item_report_2": {
         "speaker"    : "法醫・莎拉",
         "emotion"    : "normal",
-        "text"       : "吻合。但我還有個發現：\n死者的手錶停在十點十五分，\n且錶殼上有明顯的[RED]劇烈掙扎刮痕[/RED]。\n這說明他在昏迷前曾試圖反抗。",
+        "text"       : "吻合。但我還有個發現：死者的手錶停在十點十五分，且錶殼上有明顯的[RED]劇烈掙扎刮痕[/RED]。這說明他在昏迷前曾試圖反抗。",
         "next"       : "sara_item_report_3",
         "options"    : [],
         "keyword"    : "劇烈掙扎",
@@ -338,7 +379,7 @@ DIALOGUE_DATA = {
     "sara_item_report_3": {
         "speaker"    : "偵探・OS",
         "emotion"    : "normal",
-        "text"       : "（昏迷前的掙扎…\n看來這不是一場和平的「安樂死」。）",
+        "text"       : "（昏迷前的掙扎……看來這不是一場和平的「安樂死」。）",
         "next"       : None,
         "options"    : [],
         "keyword"    : "死亡時間確認",
@@ -350,7 +391,7 @@ DIALOGUE_DATA = {
     "sara_item_wrong": {
         "speaker"    : "法醫・莎拉",
         "emotion"    : "nervous",
-        "text"       : "這個…跟我的職責沒有關係。\n請先出示跟屍檢相關的物證。",
+        "text"       : "這個…跟我的職責沒有關係，請先出示跟屍檢相關的物證。",
         "next"       : None,
         "options"    : [],
         "keyword"    : None,
@@ -371,7 +412,7 @@ DIALOGUE_DATA = {
     "office_find_heel": {
         "speaker"    : "偵探・OS",
         "emotion"    : "normal",
-        "text"       : "（沙發下找到一塊[RED]高跟鞋碎片[/RED]…\n是女性的鞋，相當高跟。昨晚有誰穿著高跟鞋進過這個辦公室？）",
+        "text"       : "（沙發下找到一塊[RED]高跟鞋碎片[/RED]……是女性的鞋，相當高跟。昨晚有誰穿著高跟鞋進過這個辦公室？）",
         "next"       : None,
         "options"    : [],
         "keyword"    : "高跟鞋碎片",     # ★ 觸發推理關鍵字
@@ -383,19 +424,19 @@ DIALOGUE_DATA = {
     "office_find_will": {
         "speaker"    : "偵探・OS",
         "emotion"    : "normal",
-        "text"       : "（這是…[RED]原始遺囑[/RED]。\n老爺的署名與日期清晰可辨——\n而且老陳的名字，已經被劃掉了。）",
+        "text"       : "（這是…[RED]原始遺囑[/RED]。老爺的署名與日期清晰可辨，而且老陳的名字，已經被劃掉了。）",
         "next"       : None,
         "options"    : [],
-        "keyword"    : "原始遺囑",       # ★ 觸發推理關鍵字
+        "keyword"    : "原始遺囑",
         "give_item"  : None,
-        "unlock_stage": None,
+        "unlock_stage": "final",
     },
 
     # 撿到紅色烤漆碎片時的偵探旁白
     "office_find_paint": {
         "speaker"    : "偵探・OS",
         "emotion"    : "normal",
-        "text"       : "（牆角有幾片[RED]紅色烤漆碎片[/RED]。\n這個辦公室的牆壁是米白色的…\n這些碎片是從哪裡來的？）",
+        "text"       : "（牆角有幾片[RED]紅色烤漆碎片[/RED]。這個辦公室的牆壁是米白色的……這些碎片是從哪裡來的？）",
         "next"       : None,
         "options"    : [],
         "keyword"    : "紅色烤漆碎片",   # ★ 觸發推理關鍵字
@@ -410,7 +451,7 @@ DIALOGUE_DATA = {
     "mei_default": {
         "speaker"    : "女傭・小美",
         "emotion"    : "normal",
-        "text"       : "我…我只是普通的傭人，\n昨晚只進來送過茶，其他什麼都不知道。",
+        "text"       : "我…我只是普通的傭人，昨晚只進來送過茶，其他什麼都不知道。",
         "next"       : None,
         "options"    : [],
         "keyword"    : None,
@@ -422,7 +463,7 @@ DIALOGUE_DATA = {
     "mei_item_heel_1": {
         "speaker"    : "偵探",
         "emotion"    : "normal",
-        "text"       : "小美，妳說妳昨晚只進來送過茶，\n但在私人辦公室的沙發下，\n我發現了妳高跟鞋上的碎片。",
+        "text"       : "小美，妳說妳昨晚只進來送過茶，但在私人辦公室的沙發下，我發現了妳高跟鞋上的碎片。",
         "next"       : "mei_item_heel_2",
         "options"    : [],
         "keyword"    : None,
@@ -447,7 +488,7 @@ DIALOGUE_DATA = {
     "mei_item_heel_3": {
         "speaker"    : "偵探",
         "emotion"    : "normal",
-        "text"       : "妳還看到了什麼？\n這關係到妳會被控告偷竊還是協助殺人。",
+        "text"       : "妳還看到了什麼？這關係到妳會被控告偷竊還是協助殺人。",
         "next"       : "mei_item_heel_4",
         "options"    : [],
         "keyword"    : None,
@@ -457,7 +498,7 @@ DIALOGUE_DATA = {
     "mei_item_heel_4": {
         "speaker"    : "女傭・小美",
         "emotion"    : "panic",
-        "text"       : "我躲在沙發後面時，\n看到老陳在酒裡[RED]下藥[/RED]！\n老爺喝了之後想要求救，\n老陳卻冷眼看著他掙扎…",
+        "text"       : "我躲在沙發後面時，看到老陳在酒裡[RED]下藥[/RED]！老爺喝了之後想要求救，老陳卻冷眼看著他掙扎…",
         "next"       : None,
         "options"    : [],
         "keyword"    : "小美目擊老陳下藥",
@@ -472,7 +513,7 @@ DIALOGUE_DATA = {
     "chen_final_default": {
         "speaker"    : "管家・老陳",
         "emotion"    : "nervous",
-        "text"       : "…你想問什麼就問吧。\n我沒有什麼好隱瞞的了。",
+        "text"       : "…你想問什麼就問吧，我沒有什麼好隱瞞的了。",
         "next"       : None,
         "options"    : [],
         "keyword"    : None,
@@ -484,7 +525,7 @@ DIALOGUE_DATA = {
     "chen_final_will_1": {
         "speaker"    : "偵探",
         "emotion"    : "normal",
-        "text"       : "這份遺囑裡，老爺打算把你的名字除名。\n這就是你撕開信封、在酒裡下藥的原因。",
+        "text"       : "這份遺囑裡，老爺打算把你的名字除名。這就是你撕開信封、在酒裡下藥的原因。",
         "next"       : "chen_final_will_2",
         "options"    : [],
         "keyword"    : None,
@@ -494,7 +535,7 @@ DIALOGUE_DATA = {
     "chen_final_will_2": {
         "speaker"    : "管家・老陳",
         "emotion"    : "sad",
-        "text"       : "（沈默許久）\n我為這家人服務了三十年…\n最後竟然只得到一張白紙。",
+        "text"       : "（沈默許久）我為這家人服務了三十年……最後竟然只得到一張白紙。",
         "next"       : "chen_final_will_3",
         "options"    : [],
         "keyword"    : "老陳的動機",
@@ -514,7 +555,19 @@ DIALOGUE_DATA = {
     "ending": {
         "speaker"    : "系統",
         "emotion"    : "normal",
-        "text"       : "【案件告破】\n\n兇手：管家・老陳\n動機：遺囑除名，三十年忠誠換來的背棄\n手法：在紅酒中下強力鎮定劑，致死\n\n感謝遊玩《Whispers of the Silent Will》",
+        "text"       : "【案件告破】　兇手：管家・老陳　動機：遺囑除名，三十年忠誠換來的背棄　手法：在紅酒中下強力鎮定劑，致死　感謝遊玩《Whispers of the Silent Will》",
+        "next"       : None,
+        "options"    : [],
+        "keyword"    : None,
+        "give_item"  : None,
+        "unlock_stage": None,
+    },
+
+    # 出示遺囑給老陳，但小美尚未作證 → 裝傻
+    "chen_final_will_blocked": {
+        "speaker"    : "管家・老陳",
+        "emotion"    : "normal",
+        "text"       : "那只是老爺平時放在辦公室的文件，有什麼問題嗎？",
         "next"       : None,
         "options"    : [],
         "keyword"    : None,
@@ -556,9 +609,14 @@ NPC_DIALOGUE_MAP = {
             "item_001_envelope": "chen_item_envelope_1",
             "item_003_watch"   : "chen_item_watch_wrong",
             "item_002_wine"    : "chen_item_wine_wrong",
-            # 第四階段：出示遺囑
-            "item_007_will"    : "chen_final_will_1",
             "item_006_heel"    : "chen_final_wrong",
+        },
+        "cond_item_triggers": {
+            "item_007_will": {
+                "need_flag": "got_mei_testimony",
+                "node"     : "chen_final_will_1",
+                "fallback" : "chen_final_will_blocked",
+            },
         },
         "cond_triggers": {},
         "default"      : "chen_default",
