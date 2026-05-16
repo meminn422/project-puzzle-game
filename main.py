@@ -44,6 +44,8 @@ from src.npc import NPC
 from src.dialogue_box import DialogueBox
 from src.inventory_ui import InventoryUI
 from src.deduction import DeductionEngine, DeductionScreen
+from src.ending_screen import EndingScreen
+from src.menu_screen import MenuScreen
 
 
 # ══════════════════════════════════════════════════════════════
@@ -221,16 +223,15 @@ def draw_hud(surface: pygame.Surface, rm: ResourceManager,
     for npc in npcs:
         t    = gs.get_trust(npc.npc_id)
         name = npc.data.get("display_name", npc.npc_id)
-        # 信任度顏色：綠→黃→紅
-        col = (80, 200, 100) if t >= 60 else (220, 185, 60) if t >= 30 else (220, 80, 80)
-        tl  = font_s.render(f"{name}:{t}", True, col)
+        if npc.is_in_defense:
+            label = f"{name}:{t}  防衛中"
+            col   = (255, 115, 75)
+        else:
+            label = f"{name}:{t}"
+            col   = (80, 200, 100) if t >= 60 else (220, 185, 60) if t >= 30 else (220, 80, 80)
+        tl = font_s.render(label, True, col)
         surface.blit(tl, (trust_x, 12))
         trust_x += tl.get_width() + 20
-
-        # 防衛狀態警告
-        if npc.is_in_defense:
-            warn = font_s.render(f"⚠ {name} 防衛中", True, (255, 115, 75))
-            surface.blit(warn, (WIDTH // 2 - warn.get_width() // 2, 10))
 
     # ── NPC hover 互動提示 ──
     if show_hint and hint_text:
@@ -364,6 +365,12 @@ class GameScene:
         self.de_engine = DeductionEngine()
         self.de_screen = DeductionScreen(WIDTH, HEIGHT, self.de_engine)
 
+        # ── 結局畫面 ────────────────────────────────────────────
+        self.ending_screen = EndingScreen(WIDTH, HEIGHT)
+        self.ending_screen.on_exit = lambda: pygame.event.post(
+            pygame.event.Event(pygame.QUIT)
+        )
+
         # ── 連接回呼 ────────────────────────────────────────────
         # 回呼（Callback）模式：
         #   DialogueBox 完成某個動作後，呼叫 GameScene 提供的函式。
@@ -384,6 +391,9 @@ class GameScene:
 
     def _cb_keyword_found(self, keyword: str):
         """對話框廣播關鍵字 → 加入推理引擎線索池。"""
+        if keyword == "game_ending_trigger":
+            self.gs.set_flag("trigger_ending_screen")
+            return
         print(f"[Scene] 關鍵字記錄：{keyword}")
         self.de_engine.add_clue(keyword)
         if keyword == "小美目擊老陳下藥":
@@ -405,8 +415,11 @@ class GameScene:
         self.rm.play_sound("sfx_clue_found")
 
     def _cb_dialogue_close(self):
-        """對話框關閉 → 清除 hover 狀態。"""
+        """對話框關閉 → 清除 hover 狀態；若結局旗標已設則開啟結局畫面。"""
         self._hover_npc = None
+        if self.gs.has_flag("trigger_ending_screen"):
+            self.gs.clear_flag("trigger_ending_screen")
+            self.ending_screen.open()
 
     # ── 取得目前場景的 NPC 列表 ──────────────────────────────
 
@@ -443,7 +456,11 @@ class GameScene:
             if event.type == pygame.QUIT:
                 return False
 
-            # 推理畫布（全螢幕，最高優先消費）
+            # 結局畫面（全螢幕，最高優先消費）
+            if self.ending_screen.handle_event(event, mouse_pos):
+                continue
+
+            # 推理畫布（全螢幕，次高優先消費）
             if self.de_screen.handle_event(event, mouse_pos):
                 continue
 
@@ -611,6 +628,7 @@ class GameScene:
         for npc in self._current_npcs():
             npc.update()
         self.dialogue_box.update()
+        self.ending_screen.update()
         if self._notif_timer > 0:
             self._notif_timer -= 1
 
@@ -663,6 +681,7 @@ class GameScene:
         self.dialogue_box.draw(screen)
         self.de_screen.draw(screen)
         self._draw_unlock_notif(screen)
+        self.ending_screen.draw(screen)
 
     def _draw_study_hints(self):
         alpha = 180 + int(60 * math.sin(pygame.time.get_ticks() / 300))
@@ -819,14 +838,40 @@ def main():
       限制主迴圈每秒最多執行 60 次（60 FPS）。
       回傳上一幀實際花費的毫秒數，可用於幀率無關的物理計算（這裡未使用）。
     """
-    scene   = GameScene()
+    # 狀態機："menu" → "playing"
+    state   = "menu"
+    menu    = MenuScreen(WIDTH, HEIGHT)
+    scene   = None
     running = True
+
+    def _start_game():
+        nonlocal state, scene
+        state = "playing"
+        scene = GameScene()
+
+    menu.on_start = _start_game
 
     while running:
         clock.tick(60)
-        running = scene.handle_events()
-        scene.update()
-        scene.draw()
+        mouse_pos = pygame.mouse.get_pos()
+
+        if state == "menu":
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    break
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    running = False
+                    break
+                menu.handle_event(event, mouse_pos)
+            menu.update()
+            menu.draw(screen)
+
+        else:
+            running = scene.handle_events()
+            scene.update()
+            scene.draw()
+
         pygame.display.flip()   # 雙緩衝翻轉：把背景 buffer 顯示到螢幕
 
     pygame.quit()

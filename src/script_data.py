@@ -555,10 +555,10 @@ DIALOGUE_DATA = {
     "ending": {
         "speaker"    : "系統",
         "emotion"    : "normal",
-        "text"       : "【案件告破】　兇手：管家・老陳　動機：遺囑除名，三十年忠誠換來的背棄　手法：在紅酒中下強力鎮定劑，致死　感謝遊玩《Whispers of the Silent Will》",
+        "text"       : "三十年的忠誠，在一紙遺囑面前徹底崩潰。案件告破。",
         "next"       : None,
         "options"    : [],
-        "keyword"    : None,
+        "keyword"    : "game_ending_trigger",
         "give_item"  : None,
         "unlock_stage": None,
     },
