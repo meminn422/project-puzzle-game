@@ -163,6 +163,7 @@ class NPC:
 
     def __init__(self, npc_id: str, pos: tuple[int, int],
                  click_size: tuple[int, int] = (110, 280),
+                  hitbox_offset: tuple[int, int] = (0, 0),
                  no_defense: bool = False):
         """
         參數：
@@ -174,6 +175,7 @@ class NPC:
         """
         self.npc_id     = npc_id
         self.pos        = pos
+        self.hitbox_offset = hitbox_offset
         self.data       = NPC_DIALOGUE_MAP.get(npc_id, {})
         self.engine     = DialogueEngine(npc_id)
         self.rm         = ResourceManager.instance()
@@ -183,7 +185,12 @@ class NPC:
         self.emotion: str    = "normal"
         self._defense_timer  = 0
 
-        self.rect = pygame.Rect(pos[0], pos[1], click_size[0], click_size[1])
+        self.rect = pygame.Rect(
+            pos[0] + hitbox_offset[0],
+            pos[1] + hitbox_offset[1],
+            click_size[0],
+            click_size[1]
+        )
 
     # ── 防衛狀態 ──────────────────────────────────────────────
 
@@ -302,6 +309,8 @@ class NPC:
         if self.is_in_defense:
             if (pygame.time.get_ticks() // 200) % 2 == 0:
                 pygame.draw.rect(surface, (255, 60, 60), self.rect, 3)
+
+
 
     def _draw_placeholder(self, surface: pygame.Surface):
         """幾何形狀佔位立繪，顏色隨情緒改變。"""

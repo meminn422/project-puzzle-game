@@ -320,6 +320,10 @@ class DeductionScreen:
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             self.close()
             return True
+        
+        elif event.key == pygame.K_F1:  
+            global DEBUG_HITBOX
+            DEBUG_HITBOX = not DEBUG_HITBOX   # 每按一次翻轉
 
         return False   # 其他事件（如鍵盤非 ESC）不消費
 

@@ -42,12 +42,40 @@ SCENE_BTN_START_Y = 100         # 場景切換按鈕第一顆的 Y 起始位置
 SCENE_BTN_SPACING = 46          # 場景切換按鈕間距（像素）
 
 # NPC 立繪位置 (x, y) 與點擊碰撞區 (w, h)
+DEBUG_HITBOX      = False       # 預設關閉；按 F1 切換
+ 
+# 格式：
+# (立繪位置), (碰撞框大小), (碰撞框偏移)
 
-NPC_CHEN_STUDY  = (650, 108), (280, 660)
-NPC_KEVIN       = (100, 140), (280, 660)
-NPC_SARA        = (650, 85), (280, 660)
-NPC_MEI         = (580, 110), (220, 620)
-NPC_CHEN_FINAL  = (800,  80), (280, 660)
+NPC_CHEN_STUDY = (
+    (650, 108),
+    (440, 660),
+    (190, 0)
+)
+
+NPC_KEVIN = (
+    (100, 140),
+    (495, 660),
+    (91, 0)
+)
+
+NPC_SARA = (
+    (650, 85),
+    (365, 660),
+    (170, 0)
+)
+
+NPC_MEI = (
+    (100, 110),
+    (250, 620),
+    (173, 0),
+)
+
+NPC_CHEN_FINAL = (
+    (650, 80),
+    (440, 660),
+    (190, 0)
+)
 
 # 書房道具拾取區域 (x, y, w, h, item_id, 旁白節點)
 STUDY_ITEM_ZONES = [
@@ -436,16 +464,15 @@ class GameScene:
         # pos = 立繪左上角；click_size = 點擊碰撞區域
         # 各場景 NPC 字典：{ stage_id: [NPC, ...] }
         self.scene_npcs: dict[str, list[NPC]] = {
-            "study" : [NPC("chen", pos=NPC_CHEN_STUDY[0],  click_size=NPC_CHEN_STUDY[1])],
+            "study" : [NPC("chen",pos=NPC_CHEN_STUDY[0],click_size=NPC_CHEN_STUDY[1],hitbox_offset=NPC_CHEN_STUDY[2])],
             "police": [
-                NPC("kevin", pos=NPC_KEVIN[0], click_size=NPC_KEVIN[1]),
-                NPC("sara",  pos=NPC_SARA[0],  click_size=NPC_SARA[1],
-                    no_defense=True),  # ★ 法醫不會進入防衛狀態
+                NPC("kevin",pos=NPC_KEVIN[0],click_size=NPC_KEVIN[1],hitbox_offset=NPC_KEVIN[2]),
+                NPC("sara",pos=NPC_SARA[0],click_size=NPC_SARA[1],hitbox_offset=NPC_SARA[2],no_defense=True),  # ★ 法醫不會進入防衛狀態
             ],
             "office": [],   # 無 NPC，玩家自行搜索
             "final" : [
-                NPC("mei",  pos=NPC_MEI[0],       click_size=NPC_MEI[1]),
-                NPC("chen", pos=NPC_CHEN_FINAL[0], click_size=NPC_CHEN_FINAL[1]),
+                NPC("mei",pos=NPC_MEI[0],click_size=NPC_MEI[1],hitbox_offset=NPC_MEI[2]),
+                NPC("chen",pos=NPC_CHEN_FINAL[0],click_size=NPC_CHEN_FINAL[1],hitbox_offset=NPC_CHEN_FINAL[2]),
             ],
         }
 
@@ -737,6 +764,9 @@ class GameScene:
 
         for npc in self._current_npcs():
             npc.draw(screen)
+        
+        if DEBUG_HITBOX:               # ← 新增
+            self._draw_debug_hitboxes(screen)
 
         # HUD 互動提示文字
         hint_text = ""
@@ -762,6 +792,126 @@ class GameScene:
         self.de_screen.draw(screen)
         self._draw_unlock_notif(screen)
         self.ending_screen.draw(screen)
+
+    def _draw_debug_hitboxes(self, surface: pygame.Surface):
+        """
+        Debug 碰撞框視覺化。按 F1 開關。
+
+        顯示內容：
+          紅色框 + 半透明填充  →  NPC 點擊碰撞矩形（npc.rect）
+          四角十字標記          →  精確標示邊界
+          NPC 標籤              →  npc_id、pos 座標、rect 尺寸
+          藍色框                →  場景道具拾取區域
+          右下角座標            →  即時滑鼠位置（對照調整用）
+          頂部橫幅              →  提示 Debug 模式已開啟
+
+        ── 如何用這個工具校正立繪與碰撞框 ──────────────────────
+        開啟後，觀察紅框（碰撞矩形）與立繪圖片的相對位置偏差，
+        對照右下角的滑鼠座標，修改 main.py 頂部的 NPC_xxx 常數：
+
+          情況                    調整方式
+          ──────────────────────────────────
+          立繪偏紅框左側          pos[0] 減小（往左移紅框）
+          立繪偏紅框右側          pos[0] 增大（往右移紅框）
+          立繪偏紅框上方          pos[1] 減小（往上移紅框）
+          立繪偏紅框下方          pos[1] 增大（往下移紅框）
+          立繪比紅框寬            click_size[0] 增大
+          立繪比紅框高            click_size[1] 增大
+          立繪比紅框窄/矮         click_size 減小
+
+        改完後存檔重跑，反覆微調直到紅框完整覆蓋立繪主體。
+        """
+        fn = self.rm.font("default", 14)
+        mx, my = pygame.mouse.get_pos()
+
+        # ── 頂部 Debug 橫幅 ──────────────────────────────────
+        banner = pygame.Surface((380, 28), pygame.SRCALPHA)
+        banner.fill((180, 30, 30, 200))
+        lbl = fn.render("【DEBUG】碰撞框顯示中  ·  F1 關閉", True, (255, 230, 230))
+        banner.blit(lbl, (8, 5))
+        surface.blit(banner, (WIDTH // 2 - 190, 94))
+
+        # ── NPC 碰撞矩形（紅框）────────────────────────────────
+        for npc in self._current_npcs():
+            r = npc.rect
+
+            # 半透明紅色填充（讓碰撞範圍一目了然）
+            ov = pygame.Surface((r.width, r.height), pygame.SRCALPHA)
+            ov.fill((255, 50, 50, 35))
+            surface.blit(ov, (r.x, r.y))
+
+            # 紅色邊框
+            pygame.draw.rect(surface, (255, 80, 80), r, 2)
+
+            # 四角十字（精確標示邊界）
+            for cx_, cy_ in [(r.left, r.top), (r.right - 1, r.top),
+                              (r.left, r.bottom - 1), (r.right - 1, r.bottom - 1)]:
+                pygame.draw.line(surface, (255, 140, 140),
+                                 (cx_ - 6, cy_), (cx_ + 6, cy_), 2)
+                pygame.draw.line(surface, (255, 140, 140),
+                                 (cx_, cy_ - 6), (cx_, cy_ + 6), 2)
+
+            # NPC 標籤（三行：id / pos / rect）
+            # 顯示在碰撞框上方
+            info = [
+                npc.npc_id,
+                f"pos=({npc.pos[0]}, {npc.pos[1]})",
+                f"offset=({npc.hitbox_offset[0]}, {npc.hitbox_offset[1]})",
+                f"rect=({r.x}, {r.y}, {r.w}, {r.h})",
+            ]
+            ty = max(94, r.top - len(info) * 19 - 4)
+            for line in info:
+                ls = fn.render(line, True, (255, 200, 200))
+                bg = pygame.Surface((ls.get_width() + 6, 18), pygame.SRCALPHA)
+                bg.fill((0, 0, 0, 160))
+                surface.blit(bg, (r.left, ty))
+                surface.blit(ls, (r.left + 3, ty + 1))
+                ty += 19
+
+        # ── 道具拾取區域（藍框）────────────────────────────────
+        zones = []
+        if self.gs.current_stage == "study":
+            zones = STUDY_ITEM_ZONES
+        elif self.gs.current_stage == "office":
+            zones = OFFICE_ITEM_ZONES
+
+        for x, y, w, h, item_id, _ in zones:
+            got = self.gs.has_item(item_id)
+            color = (80, 180, 255) if not got else (70, 70, 120)
+            pygame.draw.rect(surface, color, (x, y, w, h), 2)
+            name = ITEM_DATABASE.get(item_id, {}).get("name", item_id)
+            ns = fn.render(("✓ " if got else "") + name, True, color)
+            bg = pygame.Surface((ns.get_width() + 6, 18), pygame.SRCALPHA)
+            bg.fill((0, 0, 0, 150))
+            surface.blit(bg, (x, max(0, y - 20)))
+            surface.blit(ns, (x + 3, max(0, y - 19)))
+
+        # ── 右下角：滑鼠座標 ───────────────────────────────────
+        coord = fn.render(f"滑鼠  X={mx}  Y={my}", True, (255, 240, 100))
+        bg = pygame.Surface((coord.get_width() + 14, 26), pygame.SRCALPHA)
+        bg.fill((0, 0, 0, 185))
+        bx = WIDTH - coord.get_width() - 20
+        by = HEIGHT - 68
+        surface.blit(bg, (bx - 4, by - 2))
+        surface.blit(coord, (bx, by))
+
+        # ── 右下角：hover NPC 詳細資訊 ─────────────────────────
+        if self._hover_npc:
+            npc   = self._hover_npc
+            lines = [
+                f"Hover: {npc.npc_id}",
+                f"emotion: {npc.emotion}",
+                f"defense: {npc.is_in_defense}",
+                f"no_def: {npc.no_defense}",
+            ]
+            dy = by - len(lines) * 22 - 8
+            for line in lines:
+                ls = fn.render(line, True, (255, 220, 100))
+                bg2 = pygame.Surface((ls.get_width() + 10, 20), pygame.SRCALPHA)
+                bg2.fill((0, 0, 0, 170))
+                surface.blit(bg2, (WIDTH - ls.get_width() - 16, dy))
+                surface.blit(ls, (WIDTH - ls.get_width() - 11, dy + 1))
+                dy += 22
 
     def _draw_study_hints(self):
         alpha = 180 + int(60 * math.sin(pygame.time.get_ticks() / 300))
