@@ -215,7 +215,7 @@ class DialogueBox:
 
         # 對話框版面座標（從螢幕尺寸計算）
         self.PANEL_W = screen_w - self.PANEL_X * 2
-        self.PANEL_Y = screen_h - self.PANEL_H - 18
+        self.PANEL_Y = screen_h - self.PANEL_H - 60
 
         # ── 對話狀態變數 ──────────────────────────────────────
         self._state       = self.CLOSED

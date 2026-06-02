@@ -317,11 +317,21 @@ DIALOGUE_DATA = {
         "give_item"  : "item_004_report",   # ★ 給予化驗報告
         "unlock_stage": None,
     },
+    "kevin_item_wine_hint": {
+        "speaker"     : "偵探・OS",
+        "emotion"     : "normal",
+        "text"        : "（化驗報告到手了。拿去給法醫莎拉，確認屍檢結果是否和藥物吻合。）",
+        "next"        : None,
+        "options"     : [],
+        "keyword"     : None,
+        "give_item"   : None,
+        "unlock_stage": None,
+    },
     "kevin_item_wine_3": {
         "speaker"    : "偵探",
         "emotion"    : "normal",
         "text"       : "鎮定劑？如果劑量夠大，確實能引發心臟停跳。謝了。",
-        "next"       : None,
+        "next"       : "kevin_item_wine_hint",
         "options"    : [],
         "keyword"    : None,
         "give_item"  : None,

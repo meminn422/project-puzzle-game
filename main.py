@@ -34,37 +34,38 @@ pygame.mixer.init()
 #  可調參數（Tunable Constants）
 # ══════════════════════════════════════════════════════════════
 
-WIDTH, HEIGHT     = 960, 640    # 視窗解析度
+WIDTH, HEIGHT = 1366, 768       # 視窗解析度
 FPS               = 60          # 幀率上限
 
 NOTIF_DURATION    = 240         # 場景解鎖通知顯示幀數（FPS × 4 秒）
-SCENE_BTN_START_Y = 60          # 場景切換按鈕第一顆的 Y 起始位置
+SCENE_BTN_START_Y = 100         # 場景切換按鈕第一顆的 Y 起始位置
 SCENE_BTN_SPACING = 46          # 場景切換按鈕間距（像素）
 
 # NPC 立繪位置 (x, y) 與點擊碰撞區 (w, h)
-NPC_CHEN_STUDY  = (500, 230), (115, 280)
-NPC_KEVIN       = (180, 260), (110, 260)
-NPC_SARA        = (620, 240), (110, 270)
-NPC_MEI         = (290, 240), (110, 270)
-NPC_CHEN_FINAL  = (600, 230), (115, 280)
+
+NPC_CHEN_STUDY  = (650, 108), (280, 660)
+NPC_KEVIN       = (100, 140), (280, 660)
+NPC_SARA        = (650, 85), (280, 660)
+NPC_MEI         = (580, 110), (220, 620)
+NPC_CHEN_FINAL  = (800,  80), (280, 660)
 
 # 書房道具拾取區域 (x, y, w, h, item_id, 旁白節點)
 STUDY_ITEM_ZONES = [
-    (310, 375, 65, 40, "item_001_envelope", "study_find_envelope"),
-    (553, 298, 52, 48, "item_002_wine",     "study_find_wine"),
-    (425, 335, 65, 35, "item_003_watch",    "study_find_watch"),
+    (430, 432, 70, 45, "item_001_envelope", "study_find_envelope"),  # 桌面
+    (260, 620, 55, 50, "item_002_wine",     "study_find_wine"),      # 左下地板
+    (600, 435, 65, 40, "item_003_watch",    "study_find_watch"),     # 桌面
 ]
 
 # 辦公室道具拾取區域 (x, y, w, h, item_id, 旁白節點)
 OFFICE_ITEM_ZONES = [
-    (205, 350, 55, 40, "item_005_key",   None),
-    (365, 358, 55, 35, "item_008_paint", "office_find_paint"),
-    (525, 352, 55, 38, "item_007_will",  "office_find_will"),
-    (675, 360, 55, 35, "item_006_heel",  "office_find_heel"),
+    (1100, 700, 60, 40, "item_005_key",   None),               # 右下角
+    ( 280, 600, 60, 38, "item_008_paint", "office_find_paint"), # 往下
+    ( 950, 415, 60, 38, "item_007_will",  "office_find_will"),  # 右側桌面
+    ( 455, 650, 60, 38, "item_006_heel",  "office_find_heel"),  # 往下
 ]
 
 # ── 視窗建立 ─────────────────────────────────────────────────
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.NOFRAME)
 pygame.display.set_caption("Whispers of the Silent Will")
 clock  = pygame.time.Clock()
 
@@ -210,71 +211,134 @@ def draw_scene_background(surface: pygame.Surface, rm: ResourceManager, stage_id
 #  HUD 繪製
 # ══════════════════════════════════════════════════════════════
 
-def draw_hud(surface: pygame.Surface, rm: ResourceManager,
-             gs: GameState, npcs: list[NPC],
-             show_hint: bool, hint_text: str = ""):
-    """
-    繪製 HUD（Head-Up Display）：
-      - 頂部狀態列（場景名稱、信任度、線索數）
-      - NPC hover 互動提示
-      - 底部快捷鍵說明
+def draw_hud(surface, rm, gs, npcs, show_hint, hint_text=""):
 
-    HUD 採用半透明覆蓋層，不干擾背景場景的視覺。
-    """
-    font_s = rm.font("default", 14)
-    font_m = rm.font("default", 16)
+    W = WIDTH
+    font_tiny  = rm.font("default", 18)
+    font_small = rm.font("default", 22)
+    font_large = rm.font("default", 36)
 
-    # ── 頂部狀態列 ──
-    bar = pygame.Surface((WIDTH, 38), pygame.SRCALPHA)
-    bar.fill((8, 12, 30, 208))
+    BAR_H    = 90
+    GOLD     = (180, 150, 80)
+    DARK_BG  = (8, 6, 2, 210)
+    TEXT_MAIN = (232, 220, 200)
+    TEXT_DIM  = (138, 122, 96)
+
+    # 頂部背景
+    bar = pygame.Surface((W, BAR_H), pygame.SRCALPHA)
+    bar.fill(DARK_BG)
     surface.blit(bar, (0, 0))
 
-    # 場景名稱
-    scene_name = SCENES.get(gs.current_stage, {}).get("name", gs.current_stage)
-    stage_lbl  = font_m.render(f"📍 {scene_name}", True, (175, 198, 255))
-    surface.blit(stage_lbl, (12, 10))
+    # 底部金色分隔線
+    pygame.draw.line(surface, (180, 150, 80, 80),
+                     (0, BAR_H - 1), (W, BAR_H - 1), 1)
 
-    # 已發現線索數（不含 used_ 前綴的旗標，即純線索）
+    # === 左側：金色豎線 + CASE FILE + 場景名稱 ===
+    pygame.draw.rect(surface, GOLD, (8, 18, 4, 54))
+
+    case_lbl = font_tiny.render("◆  CASE FILE", True, GOLD)
+    surface.blit(case_lbl, (24, 16))
+
+    scene_name_zh = SCENES.get(gs.current_stage, {}).get("name", gs.current_stage)
+    scene_name_en = {
+        "study" : "THE STUDY",
+        "police": "POLICE DEPARTMENT",
+        "office": "PRIVATE OFFICE",
+        "final" : "FINAL CONFRONTATION",
+    }.get(gs.current_stage, "")
+
+    scene_zh = font_large.render(scene_name_zh, True, TEXT_MAIN)
+    surface.blit(scene_zh, (24, 34))
+
+    font_en = rm.font("default", 16)
+    scene_en = font_en.render(scene_name_en, True, TEXT_DIM)
+    surface.blit(scene_en, (24 + scene_zh.get_width() + 16, 44))
+
+    # 分隔線
+    pygame.draw.line(surface, (180, 150, 80, 60),
+                     (520, 18), (520, 72), 1)
+
+    # === 中間：線索數 ===
     clue_cnt = sum(1 for f in gs.flags
                    if not f.startswith("used_")
                    and not f.startswith("stage_")
                    and not f.startswith("got_")
                    and not any(f.startswith(p) for p in
                                ["chen_", "kevin_", "sara_", "mei_", "talked_"]))
-    clue_lbl = font_s.render(f"線索：{clue_cnt}", True, (155, 218, 155))
-    surface.blit(clue_lbl, (200, 12))
 
-    # 各 NPC 信任度
-    trust_x = 290
-    for npc in npcs:
+    clue_box = pygame.Surface((140, 54), pygame.SRCALPHA)
+    clue_box.fill((180, 150, 80, 25))
+    pygame.draw.rect(clue_box, (180, 150, 80, 80),
+                     clue_box.get_rect(), 1, border_radius=4)
+    surface.blit(clue_box, (540, 18))
+
+    clue_label = font_tiny.render("線索", True, TEXT_DIM)
+    surface.blit(clue_label, (554, 22))
+
+    clue_num = font_large.render(str(clue_cnt), True, GOLD)
+    surface.blit(clue_num, (554 + clue_label.get_width() + 10, 16))
+
+    # === 右側：NPC 信任度條 ===
+    trust_x     = W - 60
+    BAR_W       = 80
+    BAR_H_SMALL = 8
+    font_trust_name = rm.font("default", 16)
+    font_trust_num  = rm.font("default", 20)
+
+    for npc in reversed(npcs):
         t    = gs.get_trust(npc.npc_id)
-        name = npc.data.get("display_name", npc.npc_id)
-        if npc.is_in_defense:
-            label = f"{name}:{t}  防衛中"
-            col   = (255, 115, 75)
+        name = npc.data.get("display_name", npc.npc_id).split("・")[-1]
+
+        if t >= 70:
+            bar_color = (120, 185, 120)
+        elif t >= 40:
+            bar_color = (180, 150, 80)
         else:
-            label = f"{name}:{t}"
-            col   = (80, 200, 100) if t >= 60 else (220, 185, 60) if t >= 30 else (220, 80, 80)
-        tl = font_s.render(label, True, col)
-        surface.blit(tl, (trust_x, 12))
-        trust_x += tl.get_width() + 20
+            bar_color = (190, 80, 80)
 
-    # ── NPC hover 互動提示 ──
+        num_surf = font_trust_num.render(str(t), True, bar_color)
+        trust_x -= num_surf.get_width()
+        surface.blit(num_surf, (trust_x, 34))
+        trust_x -= 8
+
+        trust_x -= BAR_W
+        pygame.draw.rect(surface, (40, 35, 25),
+                         (trust_x, 40, BAR_W, BAR_H_SMALL), border_radius=3)
+        fill_w = int(BAR_W * t / 100)
+        if fill_w > 0:
+            pygame.draw.rect(surface, bar_color,
+                             (trust_x, 40, fill_w, BAR_H_SMALL), border_radius=3)
+        trust_x -= 8
+
+        name_surf = font_trust_name.render(name, True, TEXT_DIM)
+        trust_x -= name_surf.get_width()
+        surface.blit(name_surf, (trust_x, 36))
+        trust_x -= 16
+
+        if npc is not npcs[0]:
+            pygame.draw.line(surface, (100, 85, 45, 60),
+                             (trust_x + 8, 22), (trust_x + 8, 68), 1)
+
+    # === Hover 提示 ===
     if show_hint and hint_text:
-        hs = pygame.Surface((len(hint_text) * 9 + 24, 30), pygame.SRCALPHA)
-        hs.fill((28, 38, 78, 205))
-        pygame.draw.rect(hs, (95, 138, 218), hs.get_rect(), 1, border_radius=6)
-        hl = font_s.render(hint_text, True, (198, 218, 255))
-        hs.blit(hl, (12, 7))
-        surface.blit(hs, (WIDTH // 2 - hs.get_width() // 2, HEIGHT // 2 - 60))
+        hs = pygame.Surface((len(hint_text) * 14 + 40, 48), pygame.SRCALPHA)
+        hs.fill((28, 22, 8, 210))
+        pygame.draw.rect(hs, GOLD, hs.get_rect(), 1, border_radius=6)
+        hl = font_small.render(hint_text, True, TEXT_MAIN)
+        hs.blit(hl, (20, 12))
+        surface.blit(hs, (W // 2 - hs.get_width() // 2, BAR_H + 30))
 
-    # ── 底部說明列 ──
-    bot = pygame.Surface((WIDTH, 22), pygame.SRCALPHA)
-    bot.fill((5, 8, 20, 175))
-    surface.blit(bot, (0, HEIGHT - 22))
+    # === 底部快捷鍵 ===
+    BOTTOM_H = 40
+    bot = pygame.Surface((W, BOTTOM_H), pygame.SRCALPHA)
+    bot.fill((4, 3, 1, 190))
+    surface.blit(bot, (0, HEIGHT - BOTTOM_H))
+    pygame.draw.line(surface, (180, 150, 80, 40),
+                     (0, HEIGHT - BOTTOM_H), (W, HEIGHT - BOTTOM_H), 1)
+
     tips = "D：推理畫布    1-4：切換場景    Q：取得本場道具    ESC：退出"
-    tl   = font_s.render(tips, True, (88, 105, 148))
-    surface.blit(tl, (WIDTH // 2 - tl.get_width() // 2, HEIGHT - 18))
+    tl = font_tiny.render(tips, True, (80, 70, 50))
+    surface.blit(tl, (W // 2 - tl.get_width() // 2, HEIGHT - BOTTOM_H + 10))
 
 
 # ══════════════════════════════════════════════════════════════
@@ -497,6 +561,8 @@ class GameScene:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     return False
+                elif event.key == pygame.K_F11:
+                    pygame.display.toggle_fullscreen()
                 elif event.key == pygame.K_d:
                     if not self.dialogue_box.is_open:
                         self.de_screen.open()
@@ -697,7 +763,12 @@ class GameScene:
             pygame.draw.rect(surf, (255, 220, 80, alpha),
                              surf.get_rect(), 2, border_radius=4)
             screen.blit(surf, (x, y))
-            self._draw_scene_item_icon(screen, item_id, x, y, w, h)
+            img_key = ITEM_DATABASE.get(item_id, {}).get("image_key")
+            img = self.rm.image(img_key) if img_key else None
+            if img:
+                screen.blit(pygame.transform.scale(img, (w, h)), (x, y))
+            else:
+                self._draw_scene_item_icon(screen, item_id, x, y, w, h)
 
     def _draw_scene_item_icon(self, surface: pygame.Surface,
                               item_id: str, x: int, y: int, w: int, h: int):
@@ -820,7 +891,12 @@ class GameScene:
             pygame.draw.rect(surf, (255, 220, 80, alpha),
                              surf.get_rect(), 2, border_radius=4)
             screen.blit(surf, (x, y))
-            self._draw_scene_item_icon(screen, item_id, x, y, w, h)
+            img_key = ITEM_DATABASE.get(item_id, {}).get("image_key")
+            img = self.rm.image(img_key) if img_key else None
+            if img:
+                screen.blit(pygame.transform.scale(img, (w, h)), (x, y))
+            else:
+                self._draw_scene_item_icon(screen, item_id, x, y, w, h)
 
 
 # ══════════════════════════════════════════════════════════════

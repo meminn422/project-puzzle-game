@@ -291,9 +291,9 @@ class NPC:
         img       = self.rm.image(img_key) if img_key else None
 
         if img:
-            w      = self.rect.width
-            h      = int(img.get_height() * (w / img.get_width()))
-            scaled = pygame.transform.scale(img, (w, h))
+            target_h = int(self.rect.height)
+            target_w = int(img.get_width() * (target_h / img.get_height()))
+            scaled   = pygame.transform.scale(img, (target_w, target_h))
             surface.blit(scaled, self.pos)
         else:
             self._draw_placeholder(surface)

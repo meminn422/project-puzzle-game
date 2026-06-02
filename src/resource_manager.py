@@ -47,28 +47,33 @@ class ResourceManager:
     # 格式：{ 邏輯名稱: 檔案名稱（不含副檔名） }
     # 邏輯名稱供程式碼使用；實際檔案放在 assets/images/
     IMAGE_MANIFEST = {
-        # 背景（檔案尚未製作時 fallback 到幾何繪製，不會 crash）
-        "bg_study"          : "bg_study.png",
-        "bg_police"         : "bg_police.png",
-        "bg_office"         : "bg_office.png",
-        "bg_final"          : "bg_final.png",
+        # 背景
+        "bg_study"          : "1den.png",
+        "bg_police"         : "2hospital.png",
+        "bg_office"         : "3office.png",
+        "bg_final"          : "1den.png",
 
-        # NPC 立繪（格式：npc_{id}_{情緒}）
-        "npc_maid_normal"   : "npc_maid_normal.png",
-        "npc_maid_panic"    : "npc_maid_panic.png",
-        "npc_maid_angry"    : "npc_maid_angry.png",
-        "npc_butler_normal" : "npc_butler_normal.png",
-        "npc_butler_nervous": "npc_butler_nervous.png",
+        # NPC 立繪
+        "npc_chen_normal"   : "chen_normal.png",
+        "npc_chen_panic"    : "chen_normal.png",
+        "npc_chen_nervous"  : "chen_normal.png",
+        "npc_chen_angry"    : "chen_normal.png",
+        "npc_chen_sad"      : "chen_normal.png",
+        "npc_kevin_normal"  : "kevin_normal.png",
+        "npc_sara_normal"   : "sara_normal.png",
+        "npc_sara_nervous"  : "sara_normal.png",
+        "npc_mei_normal"    : "mei_normal.png",
+        "npc_mei_panic"     : "mei_normal.png",
 
-        # UI 元素
-        "ui_dialogue_box"   : "ui_dialogue_box.png",
-        "ui_bag_icon"       : "ui_bag_icon.png",
-        "ui_note_icon"      : "ui_note_icon.png",
-
-        # 道具（格式：item_{id}）
-        "item_001_envelope" : "item_001_envelope.png",
-        "item_002_wine"     : "item_002_wine.png",
-        "item_003_watch"    : "item_003_watch.png",
+        # 道具
+        "item_001_envelope" : "item_envelope.png",
+        "item_002_wine"     : "item_wine.png",
+        "item_003_watch"    : "item_watch.png",
+        "item_004_report"   : "item_report.png",
+        "item_005_key"      : "item_key.png",
+        "item_006_heel"     : "item_heel_shoe.png",
+        "item_007_will"     : "item_will.png",
+        "item_008_paint"    : "item_heel.png",
     }
 
     # ── 音效資源定義表 ────────────────────────────────────────
@@ -140,6 +145,8 @@ class ResourceManager:
         try:
             # convert_alpha()：將圖片轉換成與螢幕相容的格式並支援透明度，加速 blit
             surface = pygame.image.load(path).convert_alpha()
+            if surface.get_at((0, 0))[:3] == (0, 0, 0):
+                surface.set_colorkey((0, 0, 0))
             self._images[name] = surface
             return surface
         except FileNotFoundError:
