@@ -69,8 +69,8 @@ ITEM_DATABASE = {
         "stage_found": 3,
     },
     "item_008_paint": {
-        "name"       : "紅色烤漆碎片",
-        "description": "辦公室牆角發現，來源不明。",
+        "name"       : "紅色碎片",
+        "description": "保險箱漆面被強行撬開留下的痕跡。",
         "image_key"  : "item_008_paint",
         "stage_found": 3,
     },
@@ -125,7 +125,7 @@ DIALOGUE_DATA = {
         "text"       : "（九點…但死者的手錶停在十點十五分。）你當時沒聽到什麼奇怪的聲音嗎？",
         "next"       : "chen_default_2",
         "options"    : [],
-        "keyword"    : "時間矛盾",
+        "keyword"    : "老陳九點離開的說詞",
         "give_item"  : None,
         "unlock_stage": None,
     },
@@ -137,7 +137,7 @@ DIALOGUE_DATA = {
         "options"    : [
             {"label": "你整晚都在府上嗎？", "next": "chen_alibi"},
         ],
-        "keyword"    : "老陳的證詞（九點）",
+        "keyword"    : None,
         "give_item"  : None,
         "unlock_stage": None,
     },
@@ -147,7 +147,7 @@ DIALOGUE_DATA = {
         "text"       : "（九點…但死者的手錶停在十點十五分。這中間，發生了什麼？）",
         "next"       : None,
         "options"    : [],
-        "keyword"    : "時間矛盾",
+        "keyword"    : None,
         "give_item"  : None,
         "unlock_stage": None,
     },
@@ -179,7 +179,7 @@ DIALOGUE_DATA = {
         "text"       : "這…這不是老爺要給律師的密函嗎？怎麼會在你手裡？",
         "next"       : "chen_item_envelope_3",
         "options"    : [],
-        "keyword"    : "密函下落",
+        "keyword"    : "密函被人搶先拆開",
         "give_item"  : None,
         "unlock_stage": None,
         "is_wrong_item": False,
@@ -204,7 +204,7 @@ DIALOGUE_DATA = {
         "text"       : "（顫抖著從懷裡掏出鑰匙）那是二樓的私人辦公室…請務必查清楚，我真的不希望是我想的那樣。",
         "next"       : None,
         "options"    : [],
-        "keyword"    : "辦公室鑰匙取得",
+        "keyword"    : "老陳持有辦公室鑰匙",
         "give_item"  : "item_005_key",
         "unlock_stage": "police",
     },
@@ -264,7 +264,7 @@ DIALOGUE_DATA = {
         "text"       : "（[RED]死者的手錶[/RED]，停在十點十五分。錶殼上有明顯的刮痕，這是掙扎時留下的。）",
         "next"       : None,
         "options"    : [],
-        "keyword"    : None,
+        "keyword"    : "手錶停在十點十五分",
         "give_item"  : None,
         "unlock_stage": None,
     },
@@ -305,7 +305,7 @@ DIALOGUE_DATA = {
         "give_item"  : None,
         "unlock_stage": None,
         "special_anim": "lab_analysis",
-        "wait_seconds": 5,
+        "wait_seconds": 2,
     },
     "kevin_item_wine_2": {
         "speaker"    : "鑑識專家・凱文",
@@ -313,7 +313,7 @@ DIALOGUE_DATA = {
         "text"       : "稍等…儀器報告出來了。酒裡混了高濃度的[RED]強力鎮定劑[/RED]。",
         "next"       : "kevin_item_wine_3",
         "options"    : [],
-        "keyword"    : "強力鎮定劑",
+        "keyword"    : "酒中含強力鎮定劑",
         "give_item"  : "item_004_report",   # ★ 給予化驗報告
         "unlock_stage": None,
     },
@@ -382,7 +382,7 @@ DIALOGUE_DATA = {
         "text"       : "吻合。但我還有個發現：死者的手錶停在十點十五分，且錶殼上有明顯的[RED]劇烈掙扎刮痕[/RED]。這說明他在昏迷前曾試圖反抗。",
         "next"       : "sara_item_report_3",
         "options"    : [],
-        "keyword"    : "劇烈掙扎",
+        "keyword"    : "死前有劇烈掙扎痕跡",
         "give_item"  : None,
         "unlock_stage": None,
     },
@@ -392,7 +392,7 @@ DIALOGUE_DATA = {
         "text"       : "（昏迷前的掙扎……看來這不是一場和平的「安樂死」。）",
         "next"       : None,
         "options"    : [],
-        "keyword"    : "死亡時間確認",
+        "keyword"    : None,
         "give_item"  : None,
         "unlock_stage": "office",   # ★ 解鎖第三階段辦公室場景
     },
@@ -425,7 +425,7 @@ DIALOGUE_DATA = {
         "text"       : "（沙發下找到一塊[RED]高跟鞋碎片[/RED]……是女性的鞋，相當高跟。昨晚有誰穿著高跟鞋進過這個辦公室？）",
         "next"       : None,
         "options"    : [],
-        "keyword"    : "高跟鞋碎片",     # ★ 觸發推理關鍵字
+        "keyword"    : "辦公室發現高跟鞋碎片",
         "give_item"  : None,
         "unlock_stage": None,
     },
@@ -437,7 +437,7 @@ DIALOGUE_DATA = {
         "text"       : "（這是…[RED]原始遺囑[/RED]。老爺的署名與日期清晰可辨，而且老陳的名字，已經被劃掉了。）",
         "next"       : None,
         "options"    : [],
-        "keyword"    : "原始遺囑",
+        "keyword"    : "遺囑將老陳除名",
         "give_item"  : None,
         "unlock_stage": "final",
     },
@@ -446,10 +446,10 @@ DIALOGUE_DATA = {
     "office_find_paint": {
         "speaker"    : "偵探・OS",
         "emotion"    : "normal",
-        "text"       : "（牆角有幾片[RED]紅色烤漆碎片[/RED]。這個辦公室的牆壁是米白色的……這些碎片是從哪裡來的？）",
+        "text"       : "（牆角有幾片[RED]紅色碎片[/RED]。\n保險箱的漆面被粗暴地刮開，\n這裡發生過激烈的衝突。）",
         "next"       : None,
         "options"    : [],
-        "keyword"    : "紅色烤漆碎片",   # ★ 觸發推理關鍵字
+        "keyword"    : "辦公室牆角有紅色碎片",
         "give_item"  : None,
         "unlock_stage": None,
     },
@@ -488,7 +488,7 @@ DIALOGUE_DATA = {
         "text"       : "我…我只是想進去看看有沒有值錢的東西…",
         "next"       : "mei_item_heel_3",
         "options"    : [],
-        "keyword"    : "小美在辦公室",
+        "keyword"    : "小美曾秘密進入辦公室",
         "give_item"  : None,
         "unlock_stage": None,
         "is_wrong_item": False,
@@ -511,7 +511,7 @@ DIALOGUE_DATA = {
         "text"       : "我躲在沙發後面時，看到老陳在酒裡[RED]下藥[/RED]！老爺喝了之後想要求救，老陳卻冷眼看著他掙扎…",
         "next"       : None,
         "options"    : [],
-        "keyword"    : "小美目擊老陳下藥",
+        "keyword"    : "小美親眼目擊老陳下毒",
         "give_item"  : None,
         "unlock_stage": None,
     },
@@ -548,7 +548,7 @@ DIALOGUE_DATA = {
         "text"       : "（沈默許久）我為這家人服務了三十年……最後竟然只得到一張白紙。",
         "next"       : "chen_final_will_3",
         "options"    : [],
-        "keyword"    : "老陳的動機",
+        "keyword"    : "老陳承認動機",
         "give_item"  : None,
         "unlock_stage": None,
     },
@@ -715,50 +715,45 @@ def build_condition_checks(gs_getter):
 #  推理規則
 # ══════════════════════════════════════════════════════════════
 DEDUCTION_RULES = {
-    # ── 正確推理 ──────────────────────────────────────────────
-    frozenset({"強力鎮定劑", "劇烈掙扎"}): {
+    frozenset({"老陳九點離開的說詞", "手錶停在十點十五分"}): {
         "success"   : True,
-        "conclusion": "死者在意識模糊下被脅迫\n→ 藥物致死，並非自然死亡",
-        "new_flag"  : "deduction_forced_death",
-        "misleading": False,
-    },
-    frozenset({"紅色烤漆碎片", "原始遺囑"}): {
-        "success"   : True,
-        "conclusion": "遺囑變更引發了致命衝突\n→ 辦公室曾發生肢體衝突",
-        "new_flag"  : "deduction_will_conflict",
-        "misleading": False,
-    },
-    frozenset({"老陳的動機", "小美目擊老陳下藥"}): {
-        "success"   : True,
-        "conclusion": "老陳是唯一具有動機與機會的兇手\n→ 案件告破",
-        "new_flag"  : "deduction_chen_guilty",
-        "misleading": False,
-    },
-    frozenset({"時間矛盾", "死亡時間確認"}): {
-        "success"   : True,
-        "conclusion": "老陳謊稱九點，實際死亡為十點十五分\n→ 老陳刻意偽造不在場證明",
+        "conclusion": "老陳聲稱九點離開\n但手錶停在十點十五分\n→ 老陳的時間線是謊言，他仍在現場",
         "new_flag"  : "deduction_alibi_broken",
         "misleading": False,
     },
-
-    # ── 次要推理 ──────────────────────────────────────────────
-    frozenset({"密函下落", "辦公室鑰匙取得"}): {
+    frozenset({"酒中含強力鎮定劑", "死前有劇烈掙扎痕跡"}): {
         "success"   : True,
-        "conclusion": "密函原在上鎖辦公室\n→ 老陳掌握進入辦公室的鑰匙",
+        "conclusion": "被迫服藥後仍試圖求救\n→ 確認他殺，並非自然死亡",
+        "new_flag"  : "deduction_forced_death",
+        "misleading": False,
+    },
+    frozenset({"密函被人搶先拆開", "遺囑將老陳除名"}): {
+        "success"   : True,
+        "conclusion": "密函內容正是除名遺囑\n→ 老陳搶先得知，這是殺人動機",
+        "new_flag"  : "deduction_will_conflict",
+        "misleading": False,
+    },
+    frozenset({"老陳持有辦公室鑰匙", "辦公室牆角有紅色碎片"}): {
+        "success"   : True,
+        "conclusion": "老陳持有鑰匙能進入辦公室\n現場留有激烈衝突的痕跡\n→ 老陳的動線與作案機會確認",
         "new_flag"  : "deduction_key_access",
         "misleading": False,
     },
-
-    # ── 煙霧彈 ────────────────────────────────────────────────
-    frozenset({"小美在辦公室", "高跟鞋碎片"}): {
+    frozenset({"老陳承認動機", "小美親眼目擊老陳下毒"}): {
+        "success"   : True,
+        "conclusion": "動機確立，目擊證詞確鑿\n→ 案件告破，老陳就是兇手",
+        "new_flag"  : "deduction_chen_guilty",
+        "misleading": False,
+    },
+    frozenset({"小美曾秘密進入辦公室", "辦公室發現高跟鞋碎片"}): {
         "success"   : False,
-        "conclusion": "小美確實進入辦公室，但目前缺乏直接下毒證據\n→ 此推理不充分，需更多線索",
+        "conclusion": "確認小美曾在現場\n→ 但她是目擊者，而非下毒者\n繼續調查老陳",
         "new_flag"  : None,
         "misleading": True,
     },
-    frozenset({"老陳的證詞（九點）", "強力鎮定劑"}): {
+    frozenset({"密函被人搶先拆開", "老陳持有辦公室鑰匙"}): {
         "success"   : False,
-        "conclusion": "老陳在現場，但單憑時間點無法直接確認其下毒\n→ 仍需直擊目擊證詞",
+        "conclusion": "老陳有作案機會\n→ 但動機尚未證實\n需要找到遺囑內容",
         "new_flag"  : None,
         "misleading": True,
     },

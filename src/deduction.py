@@ -121,7 +121,7 @@ class KeywordNode:
       這樣拖曳時節點不會「跳」到滑鼠位置，而是維持抓住的相對位置。
     """
 
-    W = 155   # 節點寬
+    W = 200   # 節點寬
     H = 46    # 節點高
     R = 10    # 圓角半徑
 
@@ -388,12 +388,12 @@ class DeductionScreen:
         elif result["misleading"]:
             self._show_result(result["conclusion"], (220, 180, 60))
             self.connections.append((kw_a, kw_b, False))
-            na.used = nb.used = True
         else:
             color = (80, 220, 140) if result["success"] else (220, 100, 80)
             self._show_result(result["conclusion"], color)
             self.connections.append((kw_a, kw_b, result["success"]))
-            na.used = nb.used = True
+            if result["success"]:
+                na.used = nb.used = True
 
     def _show_result(self, text: str, color: tuple):
         """設定結果文字，顯示 5 秒（300 幀）。"""

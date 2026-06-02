@@ -32,7 +32,7 @@ _HINTS = {
     "deduction_will_conflict": "推理畫布：紅色烤漆碎片 × 原始遺囑",
     "deduction_chen_guilty":   "需先取得小美目擊證詞，再於推理畫布組合",
     "deduction_alibi_broken":  "將化驗報告出示給警局的法醫莎拉",
-    "deduction_key_access":    "推理畫布：密函下落 × 辦公室鑰匙取得",
+    "deduction_key_access":    "推理畫布：老陳持有辦公室鑰匙 × 辦公室牆角有紅色碎片",
 }
 
 _TRUST_MAX_BONUS = 20

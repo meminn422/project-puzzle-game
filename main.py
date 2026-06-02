@@ -486,7 +486,7 @@ class GameScene:
             return
         print(f"[Scene] 關鍵字記錄：{keyword}")
         self.de_engine.add_clue(keyword)
-        if keyword == "小美目擊老陳下藥":
+        if keyword == "小美親眼目擊老陳下毒":
             self.gs.set_flag("got_mei_testimony")
 
     def _cb_give_item(self, item_id: str):
