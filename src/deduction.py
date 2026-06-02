@@ -20,7 +20,7 @@ import random
 import pygame
 from src.resource_manager import ResourceManager
 from src.game_state import GameState
-from src.script_data import DEDUCTION_RULES   # 從劇本資料引入推理規則
+from src.script_data import DEDUCTION_RULES, CLUE_INFO
 
 
 # ══════════════════════════════════════════════════════════════
@@ -239,9 +239,10 @@ class DeductionScreen:
         # 完成的連線：[(kw_a, kw_b, is_success)]
         self.connections: list[tuple[str, str, bool]] = []
 
-        self._dragging : KeywordNode | None = None   # 正在拖曳的節點
-        self._selected : KeywordNode | None = None   # 第一個選取的節點
-        self._hover    : KeywordNode | None = None   # 滑鼠 hover 的節點
+        self._dragging      : KeywordNode | None = None   # 正在拖曳的節點
+        self._selected      : KeywordNode | None = None   # 第一個選取的節點
+        self._hover         : KeywordNode | None = None   # 滑鼠 hover 的節點
+        self._selected_clue : str | None         = None   # 目前點擊查看的線索關鍵字
 
         self._result_text  = ""
         self._result_color = (80, 220, 140)
@@ -338,6 +339,7 @@ class DeductionScreen:
                 if self._selected:
                     self._selected.selected = False
                     self._selected = None
+                self._selected_clue = None
                 return True
 
             if self._selected is None:
@@ -346,18 +348,21 @@ class DeductionScreen:
                 self._selected   = clicked
                 clicked.start_drag(pos)
                 self._dragging   = clicked
+                self._selected_clue = clicked.keyword
             else:
                 if clicked is self._selected:
                     # 點同一個 → 取消選取
                     clicked.selected = False
                     self._selected   = None
                     self._dragging   = None
+                    self._selected_clue = None
                 else:
                     # 點另一個 → 執行推理
                     self._do_deduction(self._selected, clicked)
                     self._selected.selected = False
                     self._selected = None
                     self._dragging = None
+                    self._selected_clue = None
 
         return True
 
@@ -463,18 +468,23 @@ class DeductionScreen:
         self._draw_panel(surface, ft, fu, fs)
 
         # ── 關閉按鈕 ──
-        pygame.draw.rect(surface, (55, 38, 75), self._close_btn, border_radius=8)
-        pygame.draw.rect(surface, (175, 95, 175), self._close_btn, 2, border_radius=8)
-        xl = fu.render("✕", True, (215, 175, 215))
-        surface.blit(xl, (self._close_btn.x + self._close_btn.w // 2 - xl.get_width() // 2,
-                          self._close_btn.y + self._close_btn.h // 2 - xl.get_height() // 2))
+        pygame.draw.rect(surface, (22, 18, 6), self._close_btn, border_radius=8)
+        pygame.draw.rect(surface, (180, 150, 80), self._close_btn, 2, border_radius=8)
+        xr  = self._close_btn
+        cx  = xr.centerx
+        cy  = xr.centery
+        pad = 12
+        pygame.draw.line(surface, (200, 170, 90),
+                         (cx - pad, cy - pad), (cx + pad, cy + pad), 2)
+        pygame.draw.line(surface, (200, 170, 90),
+                         (cx + pad, cy - pad), (cx - pad, cy + pad), 2)
 
         # ── 底部提示 ──
         tips = ["點擊選取節點，再點另一節點推理組合",
-                "拖曳移動節點    ESC / ✕ 關閉"]
+                "拖曳移動節點    右上角按鈕關閉"]
         for i, t in enumerate(tips):
             ts = fs.render(t, True, (90, 110, 155))
-            surface.blit(ts, (10, self.H - 34 + i * 18))
+            surface.blit(ts, (10, self.H - 52 + i * 20))
 
     def _draw_panel(self, surface, ft, fu, fs):
         """繪製右側資訊面板。"""
@@ -482,51 +492,101 @@ class DeductionScreen:
         py = 14
 
         # 標題
-        t = ft.render("🔍 推理記事板", True, (175, 208, 255))
-        surface.blit(t, (px, py)); py += 38
+        gx, gy = px, py + 4
+        pygame.draw.circle(surface, (175, 208, 255), (gx + 10, gy + 10), 8, 2)
+        pygame.draw.line(surface, (175, 208, 255),
+                         (gx + 16, gy + 16), (gx + 22, gy + 22), 3)
+        t = ft.render("推理記事板", True, (175, 208, 255))
+        surface.blit(t, (px + 28, py)); py += 38
 
-        # 線索清單
-        cl = fu.render("已收集線索：", True, (155, 188, 238))
-        surface.blit(cl, (px, py)); py += 24
+        if self._selected_clue and self._selected_clue in CLUE_INFO:
+            info = CLUE_INFO[self._selected_clue]
 
-        if not self.engine.clue_pool:
-            e = fs.render("（尚無線索）", True, (100, 118, 155))
-            surface.blit(e, (px + 8, py)); py += 22
-        else:
-            for kw in sorted(self.engine.clue_pool):
-                # 已使用過的關鍵字顯示為灰色
-                used = any(kw in (c[0], c[1]) for c in self.connections)
-                col  = (115, 125, 148) if used else (198, 218, 255)
-                pre  = "✓ " if used else "◆ "
-                ki   = fs.render(pre + kw, True, col)
-                # 若文字超過面板寬，截斷
-                max_w = self.panel_w - 28
-                if ki.get_width() > max_w:
-                    # 顯示截斷版本
-                    short_kw = kw
-                    while fs.size(pre + short_kw + "…")[0] > max_w and short_kw:
-                        short_kw = short_kw[:-1]
-                    ki = fs.render(pre + short_kw + "…", True, col)
-                surface.blit(ki, (px + 8, py)); py += 22
+            # 線索名稱
+            name_surf = fu.render(self._selected_clue, True, (255, 240, 180))
+            surface.blit(name_surf, (px, py)); py += 28
 
-        # 分隔線
-        py += 6
-        pygame.draw.line(surface, (55, 78, 138),
-                         (px, py), (self.panel_x + self.panel_w - 14, py))
-        py += 12
+            # 金色分隔線
+            pygame.draw.line(surface, (120, 100, 55),
+                             (px, py), (self.panel_x + self.panel_w - 14, py))
+            py += 10
 
-        # 推理結果
-        if self._result_timer > 0 and self._result_text:
-            rl = fu.render("推理結論：", True, (155, 188, 238))
-            surface.blit(rl, (px, py)); py += 24
             max_w = self.panel_w - 28
-            for line in self._result_text.split("\n"):
-                while line:
+
+            def draw_section(label, text, label_color, text_color):
+                nonlocal py
+                lbl = fs.render(label, True, label_color)
+                surface.blit(lbl, (px, py)); py += 20
+                words = text
+                while words:
                     chunk = ""
-                    for ch in line:
+                    for ch in words:
                         if fs.size(chunk + ch)[0] > max_w:
                             break
                         chunk += ch
-                    rs = fs.render(chunk, True, self._result_color)
-                    surface.blit(rs, (px, py)); py += 20
-                    line = line[len(chunk):]
+                    line_surf = fs.render(chunk, True, text_color)
+                    surface.blit(line_surf, (px + 8, py)); py += 18
+                    words = words[len(chunk):]
+                py += 6
+
+            draw_section("◆ 取得方式",
+                         f"【{info['scene']}】{info['source']}",
+                         (180, 150, 80), (195, 185, 165))
+
+            draw_section("◆ 線索意義",
+                         info['meaning'],
+                         (140, 200, 140), (175, 210, 175))
+
+            draw_section("◆ 組合暗示",
+                         info['hint'],
+                         (180, 160, 100), (210, 195, 155))
+
+            py += 8
+            back = fs.render("← 點擊空白處返回線索清單", True, (90, 110, 155))
+            surface.blit(back, (px, py))
+
+        else:
+            # 線索清單
+            cl = fu.render("已收集線索：", True, (155, 188, 238))
+            surface.blit(cl, (px, py)); py += 24
+
+            if not self.engine.clue_pool:
+                e = fs.render("（尚無線索）", True, (100, 118, 155))
+                surface.blit(e, (px + 8, py)); py += 22
+            else:
+                for kw in sorted(self.engine.clue_pool):
+                    used = any(kw in (c[0], c[1]) for c in self.connections)
+                    col  = (115, 125, 148) if used else (198, 218, 255)
+                    pre  = "✓ " if used else "◆ "
+                    ki   = fs.render(pre + kw, True, col)
+                    max_w = self.panel_w - 28
+                    if ki.get_width() > max_w:
+                        short_kw = kw
+                        while fs.size(pre + short_kw + "…")[0] > max_w and short_kw:
+                            short_kw = short_kw[:-1]
+                        ki = fs.render(pre + short_kw + "…", True, col)
+                    surface.blit(ki, (px + 8, py)); py += 22
+
+            py += 6
+            pygame.draw.line(surface, (55, 78, 138),
+                             (px, py), (self.panel_x + self.panel_w - 14, py))
+            py += 12
+
+            if self._result_timer > 0 and self._result_text:
+                rl = fu.render("推理結論：", True, (155, 188, 238))
+                surface.blit(rl, (px, py)); py += 24
+                max_w = self.panel_w - 28
+                for line in self._result_text.split("\n"):
+                    while line:
+                        chunk = ""
+                        for ch in line:
+                            if fs.size(chunk + ch)[0] > max_w:
+                                break
+                            chunk += ch
+                        rs = fs.render(chunk, True, self._result_color)
+                        surface.blit(rs, (px, py)); py += 20
+                        line = line[len(chunk):]
+
+            if self._selected:
+                hint = fs.render("再點一個節點進行推理組合", True, (120, 160, 120))
+                surface.blit(hint, (px, self.H - 60))

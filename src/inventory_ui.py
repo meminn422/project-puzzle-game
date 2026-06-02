@@ -30,17 +30,17 @@ from src.script_data import ITEM_DATABASE
 
 
 # ── 顏色 ─────────────────────────────────────────────────────
-PANEL_BG      = (18,  26,  52, 222)
-PANEL_BORDER  = (98, 138, 218)
-SLOT_BG       = (32,  42,  78, 205)
-SLOT_HOVER    = (58,  78, 148, 222)
-SLOT_SELECT   = (95, 155, 252, 232)
-SLOT_BORDER   = (75, 108, 188)
+PANEL_BG      = (8,   6,   2, 222)
+PANEL_BORDER  = (180, 150, 80)
+SLOT_BG       = (14,  11,  4, 205)
+SLOT_HOVER    = (28,  22,  8, 222)
+SLOT_SELECT   = (45,  36, 12, 232)
+SLOT_BORDER   = (100,  85, 50)
 TEXT_COL      = (208, 224, 255)
 HINT_COL      = (145, 168, 208)
 BADGE_RED     = (195,  55,  55)
-SCROLLBAR_BG  = (30,  40,  70, 180)
-SCROLLBAR_FG  = (100, 140, 220, 200)   # 捲軸滑塊顏色
+SCROLLBAR_BG  = (20,  16,  5, 180)
+SCROLLBAR_FG  = (180, 150, 80, 200)   # 捲軸滑塊顏色（金色）
 
 
 class InventoryUI:
@@ -320,13 +320,32 @@ class InventoryUI:
         f_hint  = self.rm.font("default", 13)
 
         # ── 1. 背包按鈕 ──────────────────────────────────────
-        btn_bg = (75, 108, 195) if self._open else (48, 68, 138)
+        btn_bg = (28, 22, 8) if self._open else (14, 11, 4)
         pygame.draw.rect(surface, btn_bg, self.btn_rect, border_radius=10)
         pygame.draw.rect(surface, PANEL_BORDER, self.btn_rect, 2, border_radius=10)
-        bag = f_title.render("🎒", True, (215, 228, 255))
-        surface.blit(bag,
-                     (self.btn_rect.x + self.btn_rect.w // 2 - bag.get_width() // 2,
-                      self.btn_rect.y + self.btn_rect.h // 2 - bag.get_height() // 2))
+        # 背包圖示（pygame 繪製）
+        bx = self.btn_rect.x
+        by = self.btn_rect.y
+        bw = self.btn_rect.width
+        bh = self.btn_rect.height
+        cx = bx + bw // 2
+        cy = by + bh // 2
+
+        body_rect = pygame.Rect(bx + 8, by + 16, bw - 16, bh - 20)
+        pygame.draw.rect(surface, (180, 150, 80), body_rect, border_radius=6)
+        pygame.draw.rect(surface, (220, 190, 110), body_rect, 2, border_radius=6)
+
+        strap_rect = pygame.Rect(bx + 14, by + 8, bw - 28, 16)
+        pygame.draw.arc(surface, (180, 150, 80), strap_rect, 0, 3.14159, 4)
+
+        buckle_y = cy + 2
+        pygame.draw.rect(surface, (140, 115, 60),
+                         (bx + 12, buckle_y, bw - 24, 5), border_radius=2)
+        pygame.draw.rect(surface, (220, 190, 110),
+                         (bx + 12, buckle_y, bw - 24, 5), 1, border_radius=2)
+
+        pygame.draw.line(surface, (220, 190, 110),
+                         (cx, buckle_y), (cx, buckle_y + 5), 1)
 
         count = len(self.gs.inventory)
         if count > 0:
@@ -352,7 +371,7 @@ class InventoryUI:
         surface.blit(panel_surf, (pr.x, pr.y))
 
         # ── 3. 標題列 ────────────────────────────────────────
-        title = f_title.render("道具欄", True, (175, 198, 255))
+        title = f_title.render("道具欄", True, (180, 150, 80))
         surface.blit(title, (pr.x + 12, pr.y + 9))
 
         # 道具總數顯示（例如「3 / 8」）
@@ -360,7 +379,7 @@ class InventoryUI:
             cnt_lbl = f_hint.render(
                 f"{self._scroll_offset + 1}–"
                 f"{min(self._scroll_offset + self.MAX_VISIBLE, count)} / {count}",
-                True, HINT_COL)
+                True, (138, 122, 96))
             surface.blit(cnt_lbl, (pr.right - cnt_lbl.get_width() - 14, pr.y + 11))
 
         if count == 0:
@@ -417,7 +436,7 @@ class InventoryUI:
         surface.blit(hint, (pr.x + 8, footer_y))
 
         # 底部分隔線
-        pygame.draw.line(surface, (60, 80, 130),
+        pygame.draw.line(surface, (80, 68, 35),
                          (pr.x + 6, footer_y - 4),
                          (pr.right - 6, footer_y - 4), 1)
 
@@ -446,7 +465,7 @@ class InventoryUI:
 
         st = pygame.Surface((sr.w, sr.h), pygame.SRCALPHA)
         st.fill(bg)
-        bc = (148, 198, 255) if is_sel else SLOT_BORDER
+        bc = (180, 150, 80) if is_sel else SLOT_BORDER
         pygame.draw.rect(st, bc, st.get_rect(), 1, border_radius=8)
         surface.blit(st, (sr.x, sr.y))
 

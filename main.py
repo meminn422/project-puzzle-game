@@ -336,7 +336,7 @@ def draw_hud(surface, rm, gs, npcs, show_hint, hint_text=""):
     pygame.draw.line(surface, (180, 150, 80, 40),
                      (0, HEIGHT - BOTTOM_H), (W, HEIGHT - BOTTOM_H), 1)
 
-    tips = "D：推理畫布    1-4：切換場景    Q：取得本場道具    ESC：退出"
+    tips = "D：推理畫布    1-4：切換場景（測試用）    Q：取得本場道具（測試用）"
     tl = font_tiny.render(tips, True, (80, 70, 50))
     surface.blit(tl, (W // 2 - tl.get_width() // 2, HEIGHT - BOTTOM_H + 10))
 
@@ -361,16 +361,26 @@ class SceneButton:
              gs: GameState, is_current: bool):
         unlocked = gs.is_stage_unlocked(self.scene_id)
         if is_current:
-            bg = (65, 95, 190)
+            bg  = (22, 18, 6)
+            brd = (180, 150, 80)
+            brd_w = 2
+            col = (232, 220, 200)
         elif unlocked:
-            bg = (38, 52, 100)
+            bg  = (14, 11, 4)
+            brd = (120, 100, 55)
+            brd_w = 1
+            col = (175, 155, 100)
         else:
-            bg = (22, 28, 50)
+            bg  = (8, 6, 2)
+            brd = (55, 48, 32)
+            brd_w = 1
+            col = (65, 58, 40)
         pygame.draw.rect(surface, bg, self.rect, border_radius=7)
-        pygame.draw.rect(surface, (80, 115, 200) if unlocked else (40, 50, 75),
-                         self.rect, 1, border_radius=7)
+        pygame.draw.rect(surface, brd, self.rect, brd_w, border_radius=7)
+        if is_current:
+            pygame.draw.rect(surface, (180, 150, 80),
+                             (self.rect.x, self.rect.y + 5, 3, self.rect.h - 10))
         f = rm.font("default", 13)
-        col = (215, 230, 255) if unlocked else (80, 95, 130)
         lbl = f.render(self.label, True, col)
         surface.blit(lbl, (self.rect.x + self.rect.w // 2 - lbl.get_width() // 2,
                            self.rect.y + self.rect.h // 2 - lbl.get_height() // 2))
@@ -869,14 +879,14 @@ class GameScene:
         top   = 46 + y   # HUD 高度 38px 下方
 
         banner = pygame.Surface((w, 48), pygame.SRCALPHA)
-        banner.fill((28, 22, 8, int(alpha * 0.88)))
-        pygame.draw.rect(banner, (200, 160, 40, alpha),
+        banner.fill((8, 6, 2, int(alpha * 0.88)))
+        pygame.draw.rect(banner, (180, 150, 80, alpha),
                          banner.get_rect(), 2, border_radius=10)
         # 左側鑰匙圖示
-        pygame.draw.circle(banner, (200, 160, 40, alpha), (20, 24), 9, 2)
-        pygame.draw.circle(banner, (200, 160, 40, alpha), (20, 24), 4)
-        pygame.draw.line(banner,  (200, 160, 40, alpha), (29, 24), (44, 24), 3)
-        pygame.draw.line(banner,  (200, 160, 40, alpha), (38, 24), (38, 30), 2)
+        pygame.draw.circle(banner, (180, 150, 80, alpha), (20, 24), 9, 2)
+        pygame.draw.circle(banner, (180, 150, 80, alpha), (20, 24), 4)
+        pygame.draw.line(banner,  (180, 150, 80, alpha), (29, 24), (44, 24), 3)
+        pygame.draw.line(banner,  (180, 150, 80, alpha), (38, 24), (38, 30), 2)
         banner.blit(label, (48, 24 - label.get_height() // 2))
         surface.blit(banner, (x, top))
 

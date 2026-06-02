@@ -48,7 +48,7 @@ _HOW_TO_SECTIONS = [
 
 
 class _Button:
-    W, H, R = 220, 50, 10
+    W, H, R = 260, 58, 10
 
     def __init__(self, label: str, cx: int, cy: int):
         self.label = label
@@ -59,12 +59,17 @@ class _Button:
         hover  = self.rect.collidepoint((mx, my))
 
         tmp = pygame.Surface((self.W, self.H), pygame.SRCALPHA)
-        bg  = (65, 48, 95, 220) if hover else (38, 28, 60, 210)
-        brd = (205, 168, 238)   if hover else (128, 95, 168)
+        bg  = (28, 22, 8, 235) if hover else (12, 10, 4, 220)
+        brd = (220, 185, 100)  if hover else (180, 150, 80)
         tmp.fill(bg)
         pygame.draw.rect(tmp, brd, tmp.get_rect(), 2, border_radius=self.R)
 
-        lbl = font.render(self.label, True, (238, 225, 255) if hover else (195, 178, 228))
+        # 左側金色豎線裝飾
+        line_h = int(self.H * 0.6)
+        line_y = (self.H - line_h) // 2
+        pygame.draw.rect(tmp, (180, 150, 80), (10, line_y, 2, line_h))
+
+        lbl = font.render(self.label, True, (232, 220, 200))
         tmp.blit(lbl, (self.W // 2 - lbl.get_width() // 2,
                         self.H // 2 - lbl.get_height() // 2))
         tmp.set_alpha(alpha)
@@ -95,9 +100,10 @@ class MenuScreen:
         self.H  = screen_h
         self.rm = ResourceManager.instance()
 
-        self._frame    = 0
-        self._howto    = False   # 說明覆蓋層是否顯示
-        self._howto_scroll = 0
+        self._frame          = 0
+        self._howto          = False
+        self._howto_scroll   = 0
+        self._howto_max_scroll = 0
 
         cx = screen_w // 2
         btn_y_start = int(screen_h * 0.64)
@@ -118,7 +124,8 @@ class MenuScreen:
             return
 
         if event.type == pygame.MOUSEWHEEL and self._howto:
-            self._howto_scroll = max(0, self._howto_scroll - event.y * 20)
+            self._howto_scroll = max(0, min(self._howto_max_scroll,
+                                            self._howto_scroll - event.y * 20))
             return
 
         if event.type != pygame.MOUSEBUTTONDOWN or event.button != 1:
@@ -179,14 +186,14 @@ class MenuScreen:
         # ── 副標題（中文）──
         if f >= _T_SUBTITLE:
             a  = min(255, int(255 * (f - _T_SUBTITLE) / 25))
-            zh = fm.render(_TITLE_ZH, True, (165, 148, 210))
+            zh = fm.render(_TITLE_ZH, True, (200, 178, 120))
             zh.set_alpha(a)
             surface.blit(zh, (cx - zh.get_width() // 2, ty + 56))
 
         # ── 副語 ──
         if f >= _T_TAGLINE:
             a  = min(255, int(255 * (f - _T_TAGLINE) / 25))
-            tg = fsm.render(_TAGLINE, True, (125, 118, 148))
+            tg = fsm.render(_TAGLINE, True, (155, 138, 96))
             tg.set_alpha(a)
             surface.blit(tg, (cx - tg.get_width() // 2, ty + 90))
 
@@ -195,24 +202,24 @@ class MenuScreen:
             a = min(255, int(255 * (f - _T_TAGLINE) / 30))
             for dx, w in [(-160, 110), (50, 110)]:
                 s = pygame.Surface((w, 1), pygame.SRCALPHA)
-                s.fill((118, 98, 158, a))
+                s.fill((180, 150, 80, a))
                 surface.blit(s, (cx + dx, ty + 119))
 
     def _draw_buttons(self, surface):
         if self._frame < _T_BUTTONS:
             return
         a  = min(255, int(255 * (self._frame - _T_BUTTONS) / 30))
-        fn = self.rm.font("default", 20)
+        fn = self.rm.font("default", 24)
         self._btn_start.draw(surface, fn, a)
         self._btn_howto.draw(surface, fn, a)
 
     def _draw_footer(self, surface):
         fn = self.rm.font("default", 13)
-        ft = fn.render("v0.1  ·  Whispers of the Silent Will  ·  按 ESC 退出", True, (68, 65, 88))
+        ft = fn.render("v0.1  ·  Whispers of the Silent Will", True, (68, 65, 88))
         surface.blit(ft, (self.W // 2 - ft.get_width() // 2, self.H - 24))
 
     def _draw_howto(self, surface):
-        pw, ph = 680, 520
+        pw, ph = 860, 640
         px = (self.W - pw) // 2
         py = (self.H - ph) // 2
 
@@ -222,20 +229,30 @@ class MenuScreen:
         surface.blit(overlay, (0, 0))
 
         panel = pygame.Surface((pw, ph), pygame.SRCALPHA)
-        panel.fill((14, 12, 28, 248))
-        pygame.draw.rect(panel, (105, 80, 155), panel.get_rect(), 2, border_radius=14)
+        panel.fill((8, 6, 2, 248))
+        pygame.draw.rect(panel, (180, 150, 80), panel.get_rect(), 2, border_radius=14)
         surface.blit(panel, (px, py))
 
-        # 標題
-        ft = self.rm.font("default", 26)
-        fn = self.rm.font("default", 17)
-        fs = self.rm.font("default", 15)
+        # 標題底線
+        pygame.draw.line(surface, (180, 150, 80),
+                         (px + 12, py + 54), (px + pw - 12, py + 54), 1)
 
-        t = ft.render("遊戲說明", True, (208, 190, 255))
+        # 標題
+        ft = self.rm.font("default", 30)
+        fn = self.rm.font("default", 20)
+        fs = self.rm.font("default", 17)
+
+        t = ft.render("遊戲說明", True, (232, 220, 200))
         surface.blit(t, (px + pw // 2 - t.get_width() // 2, py + 18))
 
+        # 計算內容總高度，更新最大捲動量
+        content_h = sum(26 + len(lines) * 22 + 14 for _, lines in _HOW_TO_SECTIONS)
+        visible_h = ph - 80
+        self._howto_max_scroll = max(0, content_h - visible_h)
+        self._howto_scroll = min(self._howto_scroll, self._howto_max_scroll)
+
         # 內容（裁剪至面板內）
-        clip_rect = pygame.Rect(px + 24, py + 62, pw - 48, ph - 80)
+        clip_rect = pygame.Rect(px + 24, py + 62, pw - 48, visible_h)
         old_clip  = surface.get_clip()
         surface.set_clip(clip_rect)
 
@@ -243,11 +260,11 @@ class MenuScreen:
         for section_title, lines in _HOW_TO_SECTIONS:
             if cy > py + ph:
                 break
-            st = fn.render(section_title, True, (180, 155, 235))
+            st = fn.render("◆ " + section_title, True, (180, 150, 80))
             surface.blit(st, (px + 24, cy))
             cy += 26
             for line in lines:
-                lt = fs.render(line, True, (185, 188, 210))
+                lt = fs.render(line, True, (185, 175, 155))
                 surface.blit(lt, (px + 36, cy))
                 cy += 22
             cy += 14
@@ -256,13 +273,17 @@ class MenuScreen:
 
         # 關閉按鈕
         hov = self._btn_close.collidepoint(pygame.mouse.get_pos())
-        bc  = (88, 55, 118) if hov else (52, 35, 75)
-        pygame.draw.rect(surface, bc,            self._btn_close, border_radius=8)
-        pygame.draw.rect(surface, (175, 95, 175), self._btn_close, 2, border_radius=8)
-        xl = fn.render("✕", True, (220, 180, 220))
-        surface.blit(xl, (self._btn_close.centerx - xl.get_width() // 2,
-                           self._btn_close.centery - xl.get_height() // 2))
+        bc  = (32, 26, 8) if hov else (22, 18, 6)
+        pygame.draw.rect(surface, bc,             self._btn_close, border_radius=8)
+        pygame.draw.rect(surface, (180, 150, 80), self._btn_close, 2, border_radius=8)
+        cx  = self._btn_close.centerx
+        cy  = self._btn_close.centery
+        pad = 10
+        pygame.draw.line(surface, (200, 170, 90),
+                         (cx - pad, cy - pad), (cx + pad, cy + pad), 2)
+        pygame.draw.line(surface, (200, 170, 90),
+                         (cx + pad, cy - pad), (cx - pad, cy + pad), 2)
 
         # 底部提示
-        hint = fs.render("ESC 或 ✕ 關閉    滾輪可捲動", True, (85, 82, 108))
+        hint = fs.render("點擊右上角按鈕關閉", True, (85, 82, 108))
         surface.blit(hint, (self.W // 2 - hint.get_width() // 2, py + ph - 26))
