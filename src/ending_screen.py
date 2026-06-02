@@ -27,6 +27,14 @@ _DEDUCTION_SCORES = [
     ("deduction_key_access",    16, "鑰匙動線確認"),
 ]
 
+_HINTS = {
+    "deduction_forced_death":  "推理畫布：強力鎮定劑 × 劇烈掙扎",
+    "deduction_will_conflict": "推理畫布：紅色烤漆碎片 × 原始遺囑",
+    "deduction_chen_guilty":   "需先取得小美目擊證詞，再於推理畫布組合",
+    "deduction_alibi_broken":  "將化驗報告出示給警局的法醫莎拉",
+    "deduction_key_access":    "推理畫布：密函下落 × 辦公室鑰匙取得",
+}
+
 _TRUST_MAX_BONUS = 20
 _NPC_IDS = ["chen", "mei", "kevin", "sara"]
 
@@ -60,13 +68,13 @@ def _calc_score(gs: GameState) -> tuple[int, list[tuple[str, int, bool]]]:
 
     for flag, pts, label in _DEDUCTION_SCORES:
         achieved = gs.has_flag(flag)
-        breakdown.append((label, pts, achieved))
+        breakdown.append((flag, label, pts, achieved))
         if achieved:
             total += pts
 
     avg = sum(gs.get_trust(n) for n in _NPC_IDS) / len(_NPC_IDS)
     trust_pts = _TRUST_MAX_BONUS if avg >= 70 else (_TRUST_MAX_BONUS // 2 if avg >= 50 else 0)
-    breakdown.append(("NPC 信任度加成", trust_pts, trust_pts > 0))
+    breakdown.append(("npc_trust", "NPC 信任度加成", trust_pts, trust_pts > 0))
     total += trust_pts
 
     return total, breakdown
@@ -104,7 +112,7 @@ class EndingScreen:
         self._frame        = 0
         self._score_final  = 0
         self._score_shown  = 0
-        self._breakdown    : list[tuple[str, int, bool]] = []
+        self._breakdown    : list[tuple[str, str, int, bool]] = []
         self._ending_title = ""
         self._ending_color = (255, 255, 255)
         self._ending_stars = 1
@@ -157,6 +165,7 @@ class EndingScreen:
         fm = self.rm.font("default", 21)
         fl = self.rm.font("default", 28)
         ft = self.rm.font("default", 40)
+        fs = self.rm.font("default", 13)
 
         # ── 黑底淡入 ─────────────────────────────────────────────
         bg_alpha = min(255, int(255 * f / _PH_FADE))
@@ -197,7 +206,7 @@ class EndingScreen:
         col_label = cx - 210
         col_pts   = cx + 185
 
-        for i, (label, pts, achieved) in enumerate(self._breakdown):
+        for i, (flag, label, pts, achieved) in enumerate(self._breakdown):
             row_start = _T_HEADER_END + i * _PH_ROW
             if f < row_start:
                 break
@@ -213,6 +222,13 @@ class EndingScreen:
             self._blit_a(surface, fn.render(pts_s, True, ic), col_pts,        y, row_alpha)
             y += 27
 
+            if not achieved:
+                hint = _HINTS.get(flag, "")
+                if hint:
+                    self._blit_a(surface, fs.render("→ " + hint, True, (100, 100, 125)),
+                                 col_label + 26, y, row_alpha)
+                    y += 18
+
         y += 10
         if f >= _T_ROWS_END:
             self._hline(surface, cx, y, 500, content_alpha)
@@ -220,7 +236,7 @@ class EndingScreen:
 
         # ── 總分計數 ─────────────────────────────────────────────
         if f >= _T_ROWS_END:
-            max_pts  = sum(p for _, p, _ in self._breakdown)
+            max_pts  = sum(p for _, p, _ in _DEDUCTION_SCORES) + _TRUST_MAX_BONUS
             score_str = f"總分　　{self._score_shown} / {max_pts}"
             sc = fl.render(score_str, True, (255, 228, 110))
             self._blit_a(surface, sc, cx, y, content_alpha, anchor="center")

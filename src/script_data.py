@@ -575,6 +575,18 @@ DIALOGUE_DATA = {
         "unlock_stage": None,
     },
 
+    # 第四階段開場 OS 旁白（解鎖 final 場景時自動觸發一次）
+    "final_stage_intro": {
+        "speaker"     : "偵探・OS",
+        "emotion"     : "normal",
+        "text"        : "（老陳就在眼前，但直接指控還太早。先從小美身上找突破口，取得目擊證詞後，再讓老陳無從抵賴。）",
+        "next"        : None,
+        "options"     : [],
+        "keyword"     : None,
+        "give_item"   : None,
+        "unlock_stage": None,
+    },
+
     # 出示錯誤道具（高跟鞋碎片）給老陳最終對質
     "chen_final_wrong": {
         "speaker"    : "管家・老陳",

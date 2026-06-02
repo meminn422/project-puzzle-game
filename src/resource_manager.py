@@ -47,9 +47,11 @@ class ResourceManager:
     # 格式：{ 邏輯名稱: 檔案名稱（不含副檔名） }
     # 邏輯名稱供程式碼使用；實際檔案放在 assets/images/
     IMAGE_MANIFEST = {
-        # 背景
-        "bg_classroom"      : "bg_classroom.png",
-        "bg_hallway"        : "bg_hallway.png",
+        # 背景（檔案尚未製作時 fallback 到幾何繪製，不會 crash）
+        "bg_study"          : "bg_study.png",
+        "bg_police"         : "bg_police.png",
+        "bg_office"         : "bg_office.png",
+        "bg_final"          : "bg_final.png",
 
         # NPC 立繪（格式：npc_{id}_{情緒}）
         "npc_maid_normal"   : "npc_maid_normal.png",
