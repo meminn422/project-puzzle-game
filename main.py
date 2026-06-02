@@ -30,8 +30,40 @@ import math
 pygame.init()
 pygame.mixer.init()
 
-# ── 視窗設定 ─────────────────────────────────────────────────
-WIDTH, HEIGHT = 960, 640
+# ══════════════════════════════════════════════════════════════
+#  可調參數（Tunable Constants）
+# ══════════════════════════════════════════════════════════════
+
+WIDTH, HEIGHT     = 960, 640    # 視窗解析度
+FPS               = 60          # 幀率上限
+
+NOTIF_DURATION    = 240         # 場景解鎖通知顯示幀數（FPS × 4 秒）
+SCENE_BTN_START_Y = 60          # 場景切換按鈕第一顆的 Y 起始位置
+SCENE_BTN_SPACING = 46          # 場景切換按鈕間距（像素）
+
+# NPC 立繪位置 (x, y) 與點擊碰撞區 (w, h)
+NPC_CHEN_STUDY  = (500, 230), (115, 280)
+NPC_KEVIN       = (180, 260), (110, 260)
+NPC_SARA        = (620, 240), (110, 270)
+NPC_MEI         = (290, 240), (110, 270)
+NPC_CHEN_FINAL  = (600, 230), (115, 280)
+
+# 書房道具拾取區域 (x, y, w, h, item_id, 旁白節點)
+STUDY_ITEM_ZONES = [
+    (310, 375, 65, 40, "item_001_envelope", "study_find_envelope"),
+    (553, 298, 52, 48, "item_002_wine",     "study_find_wine"),
+    (425, 335, 65, 35, "item_003_watch",    "study_find_watch"),
+]
+
+# 辦公室道具拾取區域 (x, y, w, h, item_id, 旁白節點)
+OFFICE_ITEM_ZONES = [
+    (205, 350, 55, 40, "item_005_key",   None),
+    (365, 358, 55, 35, "item_008_paint", "office_find_paint"),
+    (525, 352, 55, 38, "item_007_will",  "office_find_will"),
+    (675, 360, 55, 35, "item_006_heel",  "office_find_heel"),
+]
+
+# ── 視窗建立 ─────────────────────────────────────────────────
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Whispers of the Silent Will")
 clock  = pygame.time.Clock()
@@ -330,16 +362,16 @@ class GameScene:
         # pos = 立繪左上角；click_size = 點擊碰撞區域
         # 各場景 NPC 字典：{ stage_id: [NPC, ...] }
         self.scene_npcs: dict[str, list[NPC]] = {
-            "study" : [NPC("chen", pos=(500, 230), click_size=(115, 280))],
+            "study" : [NPC("chen", pos=NPC_CHEN_STUDY[0],  click_size=NPC_CHEN_STUDY[1])],
             "police": [
-                NPC("kevin", pos=(180, 260), click_size=(110, 260)),
-                NPC("sara",  pos=(620, 240), click_size=(110, 270),
+                NPC("kevin", pos=NPC_KEVIN[0], click_size=NPC_KEVIN[1]),
+                NPC("sara",  pos=NPC_SARA[0],  click_size=NPC_SARA[1],
                     no_defense=True),  # ★ 法醫不會進入防衛狀態
             ],
             "office": [],   # 無 NPC，玩家自行搜索
             "final" : [
-                NPC("mei",  pos=(290, 240), click_size=(110, 270)),
-                NPC("chen", pos=(600, 230), click_size=(115, 280)),
+                NPC("mei",  pos=NPC_MEI[0],       click_size=NPC_MEI[1]),
+                NPC("chen", pos=NPC_CHEN_FINAL[0], click_size=NPC_CHEN_FINAL[1]),
             ],
         }
 
@@ -347,7 +379,7 @@ class GameScene:
         scene_labels = [("study", "書房"), ("police", "警局"),
                         ("office", "辦公室"), ("final", "最終對質")]
         self.scene_btns = [
-            SceneButton(sid, lbl, 60 + i * 46)
+            SceneButton(sid, lbl, SCENE_BTN_START_Y + i * SCENE_BTN_SPACING)
             for i, (sid, lbl) in enumerate(scene_labels)
         ]
 
@@ -405,7 +437,7 @@ class GameScene:
         self.gs.set_flag(f"stage_{scene_id}_unlocked")
         name = SCENES.get(scene_id, {}).get("name", scene_id)
         self._notif_text  = f"新場景解鎖　{name}"
-        self._notif_timer = 240   # 4 秒
+        self._notif_timer = NOTIF_DURATION
         self.rm.play_sound("sfx_clue_found")
 
     def _cb_dialogue_close(self):
@@ -561,33 +593,8 @@ class GameScene:
                 self.dialogue_box.open(node_id, npc=npc)
                 self.gs.set_flag(f"talked_to_{npc.npc_id}")
 
-    # 第三階段辦公室：點擊桌面區域搜索道具
-    # 格式：list of (x, y, w, h, item_id, 旁白節點 ID 或 None)
-    #
-    # ★ 為什麼用 list 而不是 dict？
-    #   pygame.Rect 是可變物件（mutable），Python 要求 dict 的 key 必須是
-    #   不可變（hashable）物件，例如 int、str、tuple。
-    #   把 pygame.Rect 當 key 會拋出：
-    #     TypeError: unhashable type: 'pygame.rect.Rect'
-    #   解決方式：改用 list of tuple，座標存成純數字，
-    #   碰撞偵測時再臨時建立 pygame.Rect，用完即丟。
-    _STUDY_ITEM_ZONES = [
-        # ( x,   y,   w,   h,  item_id,            旁白節點)
-        (310, 375, 65, 40, "item_001_envelope", "study_find_envelope"),
-        (553, 298, 52, 48, "item_002_wine",     "study_find_wine"),
-        (425, 335, 65, 35, "item_003_watch",    "study_find_watch"),
-    ]
-
-    _OFFICE_ITEM_ZONES = [
-        # ( x,   y,   w,  h,   item_id,          旁白節點)
-        (205, 350, 55, 40, "item_005_key",   None),
-        (365, 358, 55, 35, "item_008_paint", "office_find_paint"),
-        (525, 352, 55, 38, "item_007_will",  "office_find_will"),
-        (675, 360, 55, 35, "item_006_heel",  "office_find_heel"),
-    ]
-
     def _try_find_study_item(self, pos: tuple):
-        for x, y, w, h, item_id, narration in self._STUDY_ITEM_ZONES:
+        for x, y, w, h, item_id, narration in STUDY_ITEM_ZONES:
             if pygame.Rect(x, y, w, h).collidepoint(pos) and not self.gs.has_item(item_id):
                 self.gs.add_item(item_id)
                 self.rm.play_sound("sfx_item_get")
@@ -606,7 +613,7 @@ class GameScene:
         碰撞偵測：每次用座標臨時建立 pygame.Rect，呼叫 collidepoint()，
         用完即丟，完全不需要把 Rect 存成 dict key，沒有 unhashable 問題。
         """
-        for x, y, w, h, item_id, narration in self._OFFICE_ITEM_ZONES:
+        for x, y, w, h, item_id, narration in OFFICE_ITEM_ZONES:
             if pygame.Rect(x, y, w, h).collidepoint(pos) and not self.gs.has_item(item_id):
                 self.gs.add_item(item_id)
                 self.rm.play_sound("sfx_item_get")
@@ -679,7 +686,7 @@ class GameScene:
 
     def _draw_study_hints(self):
         alpha = 180 + int(60 * math.sin(pygame.time.get_ticks() / 300))
-        for x, y, w, h, item_id, _ in self._STUDY_ITEM_ZONES:
+        for x, y, w, h, item_id, _ in STUDY_ITEM_ZONES:
             if self.gs.has_item(item_id):
                 continue
             surf = pygame.Surface((w, h), pygame.SRCALPHA)
@@ -766,7 +773,7 @@ class GameScene:
             return
 
         t = self._notif_timer
-        TOTAL = 240
+        TOTAL = NOTIF_DURATION
 
         # 滑入（前 20 幀）/ 停留 / 滑出（後 20 幀）
         if t > TOTAL - 20:
@@ -802,7 +809,7 @@ class GameScene:
     def _draw_office_hints(self):
         """辦公室場景：在可拾取區域畫閃爍高亮提示。"""
         alpha = 180 + int(60 * math.sin(pygame.time.get_ticks() / 300))
-        for x, y, w, h, item_id, _ in self._OFFICE_ITEM_ZONES:
+        for x, y, w, h, item_id, _ in OFFICE_ITEM_ZONES:
             if self.gs.has_item(item_id):
                 continue
             surf = pygame.Surface((w, h), pygame.SRCALPHA)
@@ -846,7 +853,7 @@ def main():
     menu.on_start = _start_game
 
     while running:
-        clock.tick(60)
+        clock.tick(FPS)
         mouse_pos = pygame.mouse.get_pos()
 
         if state == "menu":
