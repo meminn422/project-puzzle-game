@@ -310,7 +310,8 @@ class DeductionScreen:
         if event.type == pygame.MOUSEMOTION:
             if self._dragging:
                 self._dragging.update_drag(mouse_pos)
-                return True
+            self._rubber_end = mouse_pos
+            return True
 
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1 and self._dragging:
