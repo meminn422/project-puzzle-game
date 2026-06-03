@@ -3,11 +3,13 @@ main.py
 =======
 《Whispers of the Silent Will》推理遊戲主程式
 
+
 四個階段場景：
   Stage 1  study   書房           NPC：老陳（管家）
   Stage 2  police  警局           NPC：凱文（鑑識）+ 莎拉（法醫）
   Stage 3  office  私人辦公室     無 NPC，玩家自行搜索道具
   Stage 4  final   書房（對質）   NPC：小美（女傭）+ 老陳（最終對質）
+
 
 操作說明：
   點擊場景中的 NPC              → 開啟對話
@@ -17,29 +19,36 @@ main.py
   D 鍵                          → 開啟推理畫布
   ESC                           → 退出
 
+
 測試用快捷鍵（測試版專用）：
   1~4 鍵  → 強制切換到對應場景（1=書房, 2=警局, 3=辦公室, 4=對質）
   Q 鍵    → 給予目前場景的所有道具（方便跳過搜索流程測試對話）
 """
 
+
 import pygame
 import sys
 import math
+
 
 # ── pygame 初始化（必須在 import 子模組之前）──────────────────
 pygame.init()
 pygame.mixer.init()
 
+
 # ══════════════════════════════════════════════════════════════
 #  可調參數（Tunable Constants）
 # ══════════════════════════════════════════════════════════════
 
+
 WIDTH, HEIGHT = 1366, 768       # 視窗解析度
 FPS               = 60          # 幀率上限
+
 
 NOTIF_DURATION    = 240         # 場景解鎖通知顯示幀數（FPS × 4 秒）
 SCENE_BTN_START_Y = 100         # 場景切換按鈕第一顆的 Y 起始位置
 SCENE_BTN_SPACING = 46          # 場景切換按鈕間距（像素）
+
 
 # NPC 立繪位置 (x, y) 與點擊碰撞區 (w, h)
 DEBUG_HITBOX      = False       # 預設關閉；按 F1 切換
@@ -47,11 +56,13 @@ DEBUG_HITBOX      = False       # 預設關閉；按 F1 切換
 # 格式：
 # (立繪位置), (碰撞框大小), (碰撞框偏移)
 
+
 NPC_CHEN_STUDY = (
     (650, 108),
     (440, 660),
     (190, 0)
 )
+
 
 NPC_KEVIN = (
     (100, 140),
@@ -59,11 +70,13 @@ NPC_KEVIN = (
     (91, 0)
 )
 
+
 NPC_SARA = (
     (650, 85),
     (365, 660),
     (170, 0)
 )
+
 
 NPC_MEI = (
     (100, 110),
@@ -71,11 +84,13 @@ NPC_MEI = (
     (173, 0),
 )
 
+
 NPC_CHEN_FINAL = (
     (650, 80),
     (440, 660),
     (190, 0)
 )
+
 
 # 書房道具拾取區域 (x, y, w, h, item_id, 旁白節點)
 STUDY_ITEM_ZONES = [
@@ -83,6 +98,7 @@ STUDY_ITEM_ZONES = [
     (260, 620, 55, 50, "item_002_wine",     "study_find_wine"),      # 左下地板
     (600, 435, 65, 40, "item_003_watch",    "study_find_watch"),     # 桌面
 ]
+
 
 # 辦公室道具拾取區域 (x, y, w, h, item_id, 旁白節點)
 OFFICE_ITEM_ZONES = [
@@ -92,10 +108,12 @@ OFFICE_ITEM_ZONES = [
     ( 455, 650, 60, 38, "item_006_heel",  "office_find_heel"),  # 往下
 ]
 
+
 # ── 視窗建立 ─────────────────────────────────────────────────
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.NOFRAME)
 pygame.display.set_caption("Whispers of the Silent Will")
 clock  = pygame.time.Clock()
+
 
 # ── 子模組引入（在 pygame.init() 之後）───────────────────────
 from src.resource_manager import ResourceManager
@@ -109,11 +127,14 @@ from src.ending_screen import EndingScreen
 from src.menu_screen import MenuScreen
 
 
+
+
 # ══════════════════════════════════════════════════════════════
 #  場景背景渲染
 #  無素材圖片時使用幾何形狀繪製場景（開發測試用）
 #  實際遊戲替換為：surface.blit(bg_image, (0,0))
 # ══════════════════════════════════════════════════════════════
+
 
 def _draw_bg_study(surface: pygame.Surface):
     """
@@ -159,6 +180,8 @@ def _draw_bg_study(surface: pygame.Surface):
     surface.blit(moon, (760, 60))
 
 
+
+
 def _draw_bg_police(surface: pygame.Surface):
     """
     第二階段：警局背景
@@ -194,6 +217,8 @@ def _draw_bg_police(surface: pygame.Surface):
         surface.blit(glow_s, (lx - 70, 0))
 
 
+
+
 def _draw_bg_office(surface: pygame.Surface):
     """
     第三階段：私人辦公室背景
@@ -213,6 +238,8 @@ def _draw_bg_office(surface: pygame.Surface):
     pygame.draw.rect(surface, (85, 65, 100), (380, 60, 200, 140), 3)
 
 
+
+
 def draw_scene_background(surface: pygame.Surface, rm: ResourceManager, stage_id: str):
     """
     繪製場景背景。
@@ -225,6 +252,7 @@ def draw_scene_background(surface: pygame.Surface, rm: ResourceManager, stage_id
         surface.blit(scaled, (0, 0))
         return
 
+
     # Fallback 幾何背景
     draw_funcs = {
         "study" : _draw_bg_study,
@@ -235,16 +263,21 @@ def draw_scene_background(surface: pygame.Surface, rm: ResourceManager, stage_id
     draw_funcs.get(stage_id, lambda s: s.fill((20, 20, 30)))(surface)
 
 
+
+
 # ══════════════════════════════════════════════════════════════
 #  HUD 繪製
 # ══════════════════════════════════════════════════════════════
 
+
 def draw_hud(surface, rm, gs, npcs, show_hint, hint_text=""):
+
 
     W = WIDTH
     font_tiny  = rm.font("default", 18)
     font_small = rm.font("default", 22)
     font_large = rm.font("default", 36)
+
 
     BAR_H    = 90
     GOLD     = (180, 150, 80)
@@ -252,20 +285,25 @@ def draw_hud(surface, rm, gs, npcs, show_hint, hint_text=""):
     TEXT_MAIN = (232, 220, 200)
     TEXT_DIM  = (138, 122, 96)
 
+
     # 頂部背景
     bar = pygame.Surface((W, BAR_H), pygame.SRCALPHA)
     bar.fill(DARK_BG)
     surface.blit(bar, (0, 0))
 
+
     # 底部金色分隔線
     pygame.draw.line(surface, (180, 150, 80, 80),
                      (0, BAR_H - 1), (W, BAR_H - 1), 1)
 
+
     # === 左側：金色豎線 + CASE FILE + 場景名稱 ===
     pygame.draw.rect(surface, GOLD, (8, 18, 4, 54))
 
+
     case_lbl = font_tiny.render("◆  CASE FILE", True, GOLD)
     surface.blit(case_lbl, (24, 16))
+
 
     scene_name_zh = SCENES.get(gs.current_stage, {}).get("name", gs.current_stage)
     scene_name_en = {
@@ -275,16 +313,20 @@ def draw_hud(surface, rm, gs, npcs, show_hint, hint_text=""):
         "final" : "FINAL CONFRONTATION",
     }.get(gs.current_stage, "")
 
+
     scene_zh = font_large.render(scene_name_zh, True, TEXT_MAIN)
     surface.blit(scene_zh, (24, 34))
+
 
     font_en = rm.font("default", 16)
     scene_en = font_en.render(scene_name_en, True, TEXT_DIM)
     surface.blit(scene_en, (24 + scene_zh.get_width() + 16, 44))
 
+
     # 分隔線
     pygame.draw.line(surface, (180, 150, 80, 60),
                      (520, 18), (520, 72), 1)
+
 
     # === 中間：線索數 ===
     clue_cnt = sum(1 for f in gs.flags
@@ -294,17 +336,21 @@ def draw_hud(surface, rm, gs, npcs, show_hint, hint_text=""):
                    and not any(f.startswith(p) for p in
                                ["chen_", "kevin_", "sara_", "mei_", "talked_"]))
 
+
     clue_box = pygame.Surface((140, 54), pygame.SRCALPHA)
     clue_box.fill((180, 150, 80, 25))
     pygame.draw.rect(clue_box, (180, 150, 80, 80),
                      clue_box.get_rect(), 1, border_radius=4)
     surface.blit(clue_box, (540, 18))
 
+
     clue_label = font_tiny.render("線索", True, TEXT_DIM)
     surface.blit(clue_label, (554, 22))
 
+
     clue_num = font_large.render(str(clue_cnt), True, GOLD)
     surface.blit(clue_num, (554 + clue_label.get_width() + 10, 16))
+
 
     # === 右側：NPC 信任度條 ===
     trust_x     = W - 60
@@ -313,9 +359,11 @@ def draw_hud(surface, rm, gs, npcs, show_hint, hint_text=""):
     font_trust_name = rm.font("default", 16)
     font_trust_num  = rm.font("default", 20)
 
+
     for npc in reversed(npcs):
         t    = gs.get_trust(npc.npc_id)
         name = npc.data.get("display_name", npc.npc_id).split("・")[-1]
+
 
         if t >= 70:
             bar_color = (120, 185, 120)
@@ -324,10 +372,12 @@ def draw_hud(surface, rm, gs, npcs, show_hint, hint_text=""):
         else:
             bar_color = (190, 80, 80)
 
+
         num_surf = font_trust_num.render(str(t), True, bar_color)
         trust_x -= num_surf.get_width()
         surface.blit(num_surf, (trust_x, 34))
         trust_x -= 8
+
 
         trust_x -= BAR_W
         pygame.draw.rect(surface, (40, 35, 25),
@@ -338,14 +388,17 @@ def draw_hud(surface, rm, gs, npcs, show_hint, hint_text=""):
                              (trust_x, 40, fill_w, BAR_H_SMALL), border_radius=3)
         trust_x -= 8
 
+
         name_surf = font_trust_name.render(name, True, TEXT_DIM)
         trust_x -= name_surf.get_width()
         surface.blit(name_surf, (trust_x, 36))
         trust_x -= 16
 
+
         if npc is not npcs[0]:
             pygame.draw.line(surface, (100, 85, 45, 60),
                              (trust_x + 8, 22), (trust_x + 8, 68), 1)
+
 
     # === Hover 提示 ===
     if show_hint and hint_text:
@@ -356,6 +409,7 @@ def draw_hud(surface, rm, gs, npcs, show_hint, hint_text=""):
         hs.blit(hl, (20, 12))
         surface.blit(hs, (W // 2 - hs.get_width() // 2, BAR_H + 30))
 
+
     # === 底部快捷鍵 ===
     BOTTOM_H = 40
     bot = pygame.Surface((W, BOTTOM_H), pygame.SRCALPHA)
@@ -364,14 +418,18 @@ def draw_hud(surface, rm, gs, npcs, show_hint, hint_text=""):
     pygame.draw.line(surface, (180, 150, 80, 40),
                      (0, HEIGHT - BOTTOM_H), (W, HEIGHT - BOTTOM_H), 1)
 
+
     tips = "D：推理畫布    1-4：切換場景（測試用）    Q：取得本場道具（測試用）"
     tl = font_tiny.render(tips, True, (80, 70, 50))
     surface.blit(tl, (W // 2 - tl.get_width() // 2, HEIGHT - BOTTOM_H + 10))
 
 
+
+
 # ══════════════════════════════════════════════════════════════
 #  場景切換按鈕
 # ══════════════════════════════════════════════════════════════
+
 
 class SceneButton:
     """
@@ -380,10 +438,12 @@ class SceneButton:
     """
     W, H = 100, 38
 
+
     def __init__(self, scene_id: str, label: str, y: int):
         self.scene_id = scene_id
         self.label    = label
         self.rect     = pygame.Rect(8, y, self.W, self.H)
+
 
     def draw(self, surface: pygame.Surface, rm: ResourceManager,
              gs: GameState, is_current: bool):
@@ -413,6 +473,7 @@ class SceneButton:
         surface.blit(lbl, (self.rect.x + self.rect.w // 2 - lbl.get_width() // 2,
                            self.rect.y + self.rect.h // 2 - lbl.get_height() // 2))
 
+
     def handle_click(self, pos: tuple, gs: GameState) -> bool:
         """點擊且場景已解鎖時切換場景，回傳是否消費了點擊。"""
         if self.rect.collidepoint(pos) and gs.is_stage_unlocked(self.scene_id):
@@ -421,13 +482,17 @@ class SceneButton:
         return False
 
 
+
+
 # ══════════════════════════════════════════════════════════════
 #  GameScene：主場景協調器
 # ══════════════════════════════════════════════════════════════
 
+
 class GameScene:
     """
     主場景：協調所有模組的建立、更新、繪製與事件分發。
+
 
     模組關係（依賴方向）：
       GameScene
@@ -439,6 +504,7 @@ class GameScene:
         ├── DeductionEngine   （推理邏輯，單向被 DeductionScreen 使用）
         └── DeductionScreen   （推理 UI）
 
+
     事件消費優先順序（由高到低）：
       1. DeductionScreen（全螢幕，消費所有事件）
       2. 鍵盤快捷鍵
@@ -448,6 +514,7 @@ class GameScene:
       6. NPC 點擊（場景互動）
     """
 
+
     # 各場景的道具（測試用 Q 鍵發放）
     STAGE_ITEMS = {
         "study" : ["item_001_envelope", "item_002_wine", "item_003_watch"],
@@ -456,9 +523,11 @@ class GameScene:
         "final" : [],
     }
 
+
     def __init__(self):
         self.rm = ResourceManager.instance()
         self.gs = GameState.instance()
+
 
         # ── NPC 設定（各場景、位置）────────────────────────────
         # pos = 立繪左上角；click_size = 點擊碰撞區域
@@ -476,6 +545,7 @@ class GameScene:
             ],
         }
 
+
         # ── 場景切換按鈕 ────────────────────────────────────────
         scene_labels = [("study", "書房"), ("police", "警局"),
                         ("office", "辦公室"), ("final", "最終對質")]
@@ -484,19 +554,23 @@ class GameScene:
             for i, (sid, lbl) in enumerate(scene_labels)
         ]
 
+
         # ── UI 模組 ─────────────────────────────────────────────
         self.dialogue_box = DialogueBox(WIDTH, HEIGHT)
         self.inventory_ui = InventoryUI(WIDTH, HEIGHT)
 
+
         # ── 推理系統 ────────────────────────────────────────────
         self.de_engine = DeductionEngine()
         self.de_screen = DeductionScreen(WIDTH, HEIGHT, self.de_engine)
+
 
         # ── 結局畫面 ────────────────────────────────────────────
         self.ending_screen = EndingScreen(WIDTH, HEIGHT)
         self.ending_screen.on_exit = lambda: pygame.event.post(
             pygame.event.Event(pygame.QUIT)
         )
+
 
         # ── 連接回呼 ────────────────────────────────────────────
         # 回呼（Callback）模式：
@@ -507,14 +581,18 @@ class GameScene:
         self.dialogue_box.on_unlock_stage  = self._cb_unlock_stage
         self.dialogue_box.on_close         = self._cb_dialogue_close
 
+
         # UI 狀態
         self._hover_npc : NPC | None = None    # 目前滑鼠 hover 的 NPC
+
 
         # 場景解鎖通知
         self._notif_text  = ""
         self._notif_timer = 0   # 倒數幀數，0 = 不顯示
 
+
     # ── 回呼函式 ─────────────────────────────────────────────
+
 
     def _cb_keyword_found(self, keyword: str):
         """對話框廣播關鍵字 → 加入推理引擎線索池。"""
@@ -526,11 +604,13 @@ class GameScene:
         if keyword == "小美親眼目擊老陳下毒":
             self.gs.set_flag("got_mei_testimony")
 
+
     def _cb_give_item(self, item_id: str):
         """對話框廣播給予道具 → 加入背包。"""
         if self.gs.add_item(item_id):
             self.rm.play_sound("sfx_item_get")
             print(f"[Scene] 取得道具：{ITEM_DATABASE.get(item_id, {}).get('name', item_id)}")
+
 
     def _cb_unlock_stage(self, scene_id: str):
         """對話框廣播解鎖場景 → 設定旗標並顯示通知。"""
@@ -544,6 +624,7 @@ class GameScene:
             self.dialogue_box.open("final_stage_intro", npc=None)
             self.gs.set_flag("final_intro_shown")
 
+
     def _cb_dialogue_close(self):
         """對話框關閉 → 清除 hover 狀態；若結局旗標已設則開啟結局畫面。"""
         self._hover_npc = None
@@ -551,27 +632,34 @@ class GameScene:
             self.gs.clear_flag("trigger_ending_screen")
             self.ending_screen.open()
 
+
     # ── 取得目前場景的 NPC 列表 ──────────────────────────────
+
 
     def _current_npcs(self) -> list[NPC]:
         """回傳目前場景的 NPC 實體列表。"""
         return self.scene_npcs.get(self.gs.current_stage, [])
 
+
     # ── 事件處理 ─────────────────────────────────────────────
+
 
     def handle_events(self) -> bool:
         """
         主事件分發。回傳 False 表示應退出遊戲。
+
 
         每幀先更新 hover 狀態（不是事件，需要每幀刷新），
         再逐一處理事件佇列。
         """
         mouse_pos = pygame.mouse.get_pos()
 
+
         # ── 每幀 hover 更新 ──
         self.inventory_ui.update_hover(mouse_pos)
         self.dialogue_box.update_hover(mouse_pos)
         self.de_screen.update(mouse_pos)
+
 
         # 更新 hover NPC
         self._hover_npc = None
@@ -581,47 +669,86 @@ class GameScene:
                     self._hover_npc = npc
                     break
 
+
         # ── 事件佇列 ──
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
 
+
             # 結局畫面（全螢幕，最高優先消費）
             if self.ending_screen.handle_event(event, mouse_pos):
                 continue
 
-            # 推理畫布（全螢幕，次高優先消費）
-            if self.de_screen.handle_event(event, mouse_pos):
+
+            # 修正：只有在畫布真正開啟時，才讓推理畫布攔截事件
+            if self.de_screen.is_open and self.de_screen.handle_event(event, mouse_pos):
                 continue
 
-            # 鍵盤
+
+
+
+# ─── 鍵盤事件處理 ───
+            # ==========================================
+# 鍵盤事件處理（修正後安全版）
+# ==========================================
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
+
+
+                # ─── 新增：F1 鍵切換除錯碰撞框 ───
+                if event.key == pygame.K_F1:
+                    global DEBUG_HITBOX
+                    DEBUG_HITBOX = not DEBUG_HITBOX
+                    print(f"[Debug] 碰撞框顯示狀態: {DEBUG_HITBOX}")
+                    continue  # 這個 continue 是正確的（跳到下一個 event）
+
+
+                elif event.key == pygame.K_ESCAPE:
                     return False
+                   
                 elif event.key == pygame.K_F11:
                     pygame.display.toggle_fullscreen()
-                elif event.key == pygame.K_d:
+                    continue
+                   
+                # 同時判定小寫 d 與大寫 D (透過 event.unicode)
+                elif event.key == pygame.K_d or (hasattr(event, 'unicode') and event.unicode in ('d', 'D')):
                     if not self.dialogue_box.is_open:
-                        self.de_screen.open()
+                        if self.de_screen.is_open:
+                            self.de_screen.close() # 如果開著就關閉
+                        else:
+                            self.de_screen.open()  # 如果關著就開啟
+                    continue  #  修正：處理完 D 鍵，直接跳下一個事件，不要往下亂跑
+                           
                 elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                     if self.dialogue_box.is_open:
                         self.dialogue_box.handle_click(mouse_pos)
+                    continue
+                       
                 # 測試用：1~4 強制切換場景
                 elif event.key == pygame.K_1:
                     self.gs.change_stage("study")
+                    continue
                 elif event.key == pygame.K_2:
                     self.gs.set_flag("stage_police_unlocked")
                     self.gs.change_stage("police")
+                    continue
                 elif event.key == pygame.K_3:
                     self.gs.set_flag("stage_office_unlocked")
                     self.gs.change_stage("office")
+                    continue
                 elif event.key == pygame.K_4:
                     self.gs.set_flag("stage_final_unlocked")
                     self.gs.change_stage("final")
+                    continue
+                   
                 # 測試用：Q 鍵發放本場道具
                 elif event.key == pygame.K_q:
                     self._give_stage_items()
-                continue
+                    continue
+
+
+                # ❌ 請刪除原本孤零零在最底部的 continue ❌
+
 
             # 滑鼠滾輪（MOUSEWHEEL）
             # pygame.MOUSEWHEEL 是獨立事件類型（pygame >= 2.0）
@@ -632,6 +759,7 @@ class GameScene:
                 if not self.dialogue_box.is_open:
                     self.inventory_ui.handle_scroll(event)
                 continue
+
 
             # 滑鼠點擊
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -662,7 +790,9 @@ class GameScene:
                 if self.gs.current_stage == "office":
                     self._try_find_item(mouse_pos)
 
+
         return True
+
 
     def _give_stage_items(self):
         """測試用：給予目前場景的所有道具。"""
@@ -675,6 +805,7 @@ class GameScene:
         if not given:
             print("[Scene] 本場所有道具已取得。")
 
+
     def _interact_with_npc(self, npc: NPC):
         """
         玩家點擊 NPC 的互動邏輯：
@@ -682,6 +813,7 @@ class GameScene:
           2. 沒有選取道具  → 普通對話
         """
         selected = self.inventory_ui.selected_item
+
 
         if selected:
             # 出示道具
@@ -699,6 +831,7 @@ class GameScene:
                 self.dialogue_box.open(node_id, npc=npc)
                 self.gs.set_flag(f"talked_to_{npc.npc_id}")
 
+
     def _try_find_study_item(self, pos: tuple):
         for x, y, w, h, item_id, narration in STUDY_ITEM_ZONES:
             if pygame.Rect(x, y, w, h).collidepoint(pos) and not self.gs.has_item(item_id):
@@ -709,12 +842,14 @@ class GameScene:
                     self.dialogue_box.open(narration, npc=None)
                 return
 
+
     def _try_find_item(self, pos: tuple):
         """
         在辦公室場景點擊桌面，嘗試撿取對應道具。
         撿到後若有旁白節點，自動開啟偵探 OS 旁白（含關鍵字廣播）。
         這樣三個辦公室關鍵字（高跟鞋碎片、原始遺囑、紅色烤漆碎片）
         能透過 DialogueBox.on_keyword_found 回呼進入推理引擎。
+
 
         碰撞偵測：每次用座標臨時建立 pygame.Rect，呼叫 collidepoint()，
         用完即丟，完全不需要把 Rect 存成 dict key，沒有 unhashable 問題。
@@ -728,7 +863,9 @@ class GameScene:
                     self.dialogue_box.open(narration, npc=None)
                 return
 
+
     # ── 更新 ─────────────────────────────────────────────────
+
 
     def update(self):
         """每幀更新所有模組狀態。"""
@@ -739,7 +876,9 @@ class GameScene:
         if self._notif_timer > 0:
             self._notif_timer -= 1
 
+
     # ── 繪製 ─────────────────────────────────────────────────
+
 
     def draw(self):
         """
@@ -755,6 +894,7 @@ class GameScene:
         """
         draw_scene_background(screen, self.rm, self.gs.current_stage)
 
+
         # 書房：道具拾取提示
         if self.gs.current_stage == "study":
             self._draw_study_hints()
@@ -762,11 +902,13 @@ class GameScene:
         if self.gs.current_stage == "office":
             self._draw_office_hints()
 
+
         for npc in self._current_npcs():
             npc.draw(screen)
-        
+       
         if DEBUG_HITBOX:               # ← 新增
             self._draw_debug_hitboxes(screen)
+
 
         # HUD 互動提示文字
         hint_text = ""
@@ -780,12 +922,15 @@ class GameScene:
             else:
                 hint_text = f"點擊與 {name} 對話"
 
+
         draw_hud(screen, self.rm, self.gs, self._current_npcs(),
                  show_hint, hint_text)
+
 
         for btn in self.scene_btns:
             btn.draw(screen, self.rm, self.gs,
                      is_current=(btn.scene_id == self.gs.current_stage))
+
 
         self.inventory_ui.draw(screen)
         self.dialogue_box.draw(screen)
@@ -793,9 +938,11 @@ class GameScene:
         self._draw_unlock_notif(screen)
         self.ending_screen.draw(screen)
 
+
     def _draw_debug_hitboxes(self, surface: pygame.Surface):
         """
         Debug 碰撞框視覺化。按 F1 開關。
+
 
         顯示內容：
           紅色框 + 半透明填充  →  NPC 點擊碰撞矩形（npc.rect）
@@ -805,9 +952,11 @@ class GameScene:
           右下角座標            →  即時滑鼠位置（對照調整用）
           頂部橫幅              →  提示 Debug 模式已開啟
 
+
         ── 如何用這個工具校正立繪與碰撞框 ──────────────────────
         開啟後，觀察紅框（碰撞矩形）與立繪圖片的相對位置偏差，
         對照右下角的滑鼠座標，修改 main.py 頂部的 NPC_xxx 常數：
+
 
           情況                    調整方式
           ──────────────────────────────────
@@ -819,10 +968,12 @@ class GameScene:
           立繪比紅框高            click_size[1] 增大
           立繪比紅框窄/矮         click_size 減小
 
+
         改完後存檔重跑，反覆微調直到紅框完整覆蓋立繪主體。
         """
         fn = self.rm.font("default", 14)
         mx, my = pygame.mouse.get_pos()
+
 
         # ── 頂部 Debug 橫幅 ──────────────────────────────────
         banner = pygame.Surface((380, 28), pygame.SRCALPHA)
@@ -831,17 +982,21 @@ class GameScene:
         banner.blit(lbl, (8, 5))
         surface.blit(banner, (WIDTH // 2 - 190, 94))
 
+
         # ── NPC 碰撞矩形（紅框）────────────────────────────────
         for npc in self._current_npcs():
             r = npc.rect
+
 
             # 半透明紅色填充（讓碰撞範圍一目了然）
             ov = pygame.Surface((r.width, r.height), pygame.SRCALPHA)
             ov.fill((255, 50, 50, 35))
             surface.blit(ov, (r.x, r.y))
 
+
             # 紅色邊框
             pygame.draw.rect(surface, (255, 80, 80), r, 2)
+
 
             # 四角十字（精確標示邊界）
             for cx_, cy_ in [(r.left, r.top), (r.right - 1, r.top),
@@ -850,6 +1005,7 @@ class GameScene:
                                  (cx_ - 6, cy_), (cx_ + 6, cy_), 2)
                 pygame.draw.line(surface, (255, 140, 140),
                                  (cx_, cy_ - 6), (cx_, cy_ + 6), 2)
+
 
             # NPC 標籤（三行：id / pos / rect）
             # 顯示在碰撞框上方
@@ -868,12 +1024,14 @@ class GameScene:
                 surface.blit(ls, (r.left + 3, ty + 1))
                 ty += 19
 
+
         # ── 道具拾取區域（藍框）────────────────────────────────
         zones = []
         if self.gs.current_stage == "study":
             zones = STUDY_ITEM_ZONES
         elif self.gs.current_stage == "office":
             zones = OFFICE_ITEM_ZONES
+
 
         for x, y, w, h, item_id, _ in zones:
             got = self.gs.has_item(item_id)
@@ -886,6 +1044,7 @@ class GameScene:
             surface.blit(bg, (x, max(0, y - 20)))
             surface.blit(ns, (x + 3, max(0, y - 19)))
 
+
         # ── 右下角：滑鼠座標 ───────────────────────────────────
         coord = fn.render(f"滑鼠  X={mx}  Y={my}", True, (255, 240, 100))
         bg = pygame.Surface((coord.get_width() + 14, 26), pygame.SRCALPHA)
@@ -894,6 +1053,7 @@ class GameScene:
         by = HEIGHT - 68
         surface.blit(bg, (bx - 4, by - 2))
         surface.blit(coord, (bx, by))
+
 
         # ── 右下角：hover NPC 詳細資訊 ─────────────────────────
         if self._hover_npc:
@@ -913,6 +1073,7 @@ class GameScene:
                 surface.blit(ls, (WIDTH - ls.get_width() - 11, dy + 1))
                 dy += 22
 
+
     def _draw_study_hints(self):
         alpha = 180 + int(60 * math.sin(pygame.time.get_ticks() / 300))
         for x, y, w, h, item_id, _ in STUDY_ITEM_ZONES:
@@ -930,9 +1091,11 @@ class GameScene:
             else:
                 self._draw_scene_item_icon(screen, item_id, x, y, w, h)
 
+
     def _draw_scene_item_icon(self, surface: pygame.Surface,
                               item_id: str, x: int, y: int, w: int, h: int):
         cx, cy = x + w // 2, y + h // 2
+
 
         if item_id == "item_001_envelope":
             # 信封
@@ -945,6 +1108,7 @@ class GameScene:
             pts = [(x+8, y+8), (x+14, y+4), (x+20, y+9), (x+26, y+4), (x+w-8, y+8)]
             pygame.draw.lines(surface, (200, 60, 60), False, pts, 2)
 
+
         elif item_id == "item_002_wine":
             # 酒杯（傾倒）
             pygame.draw.polygon(surface, (140, 30, 50),
@@ -953,6 +1117,7 @@ class GameScene:
             pygame.draw.line(surface, (140, 30, 50), (cx, y+20), (cx, y+32), 2)
             pygame.draw.line(surface, (140, 30, 50), (cx-7, y+32), (cx+7, y+32), 2)
             pygame.draw.ellipse(surface, (160, 40, 60), (x+4, y+24, 20, 8))
+
 
         elif item_id == "item_003_watch":
             # 手錶
@@ -964,6 +1129,7 @@ class GameScene:
             pygame.draw.line(surface, (40, 40, 40), (cx, cy), (cx+9, cy),   1)
             pygame.draw.line(surface, (180, 60, 60), (cx+5, cy-8), (cx+11, cy+2), 1)
 
+
         elif item_id == "item_005_key":
             # 鑰匙
             pygame.draw.circle(surface, (200, 165, 40), (cx-8, cy-4), 8, 0)
@@ -974,6 +1140,7 @@ class GameScene:
                 bx = cx + 6 + i * 5
                 pygame.draw.line(surface, (200, 165, 40), (bx, cy-4), (bx, cy-4+dy), 2)
 
+
         elif item_id == "item_006_heel":
             # 高跟鞋碎片
             pygame.draw.polygon(surface, (180, 80, 120),
@@ -981,6 +1148,7 @@ class GameScene:
                                  (cx+2, y+h-6), (cx-2, y+h-6)])
             pygame.draw.rect(surface, (180, 80, 120), (cx-10, y+6, 20, 4), border_radius=1)
             pygame.draw.line(surface, (240, 180, 210), (cx+1, y+10), (cx+6, y+20), 1)
+
 
         elif item_id == "item_007_will":
             # 遺囑捲軸
@@ -994,6 +1162,7 @@ class GameScene:
                                  (x+10, y+10+row*5), (x+w-10, y+10+row*5), 1)
             pygame.draw.circle(surface, (180, 50, 50), (cx+6, cy+6), 5)
 
+
         elif item_id == "item_008_paint":
             # 紅色烤漆碎片
             pts = [(cx-8, cy-10), (cx+6, cy-7), (cx+10, cy+1),
@@ -1002,12 +1171,15 @@ class GameScene:
             pygame.draw.polygon(surface, (220, 80, 80), pts, 2)
             pygame.draw.line(surface, (240, 130, 130), (cx-6, cy-8), (cx+2, cy-5), 2)
 
+
     def _draw_unlock_notif(self, surface: pygame.Surface):
         if self._notif_timer <= 0:
             return
 
+
         t = self._notif_timer
         TOTAL = NOTIF_DURATION
+
 
         # 滑入（前 20 幀）/ 停留 / 滑出（後 20 幀）
         if t > TOTAL - 20:
@@ -1019,14 +1191,17 @@ class GameScene:
         else:
             y = 0
 
+
         # 淡出 alpha
         alpha = 255 if t > 20 else int(255 * t / 20)
+
 
         font  = self.rm.font("default", 20)
         label = font.render(self._notif_text, True, (255, 235, 120))
         w     = label.get_width() + 48
         x     = WIDTH // 2 - w // 2
         top   = 46 + y   # HUD 高度 38px 下方
+
 
         banner = pygame.Surface((w, 48), pygame.SRCALPHA)
         banner.fill((8, 6, 2, int(alpha * 0.88)))
@@ -1039,6 +1214,7 @@ class GameScene:
         pygame.draw.line(banner,  (180, 150, 80, alpha), (38, 24), (38, 30), 2)
         banner.blit(label, (48, 24 - label.get_height() // 2))
         surface.blit(banner, (x, top))
+
 
     def _draw_office_hints(self):
         """辦公室場景：在可拾取區域畫閃爍高亮提示。"""
@@ -1059,13 +1235,17 @@ class GameScene:
                 self._draw_scene_item_icon(screen, item_id, x, y, w, h)
 
 
+
+
 # ══════════════════════════════════════════════════════════════
 #  主程式入口
 # ══════════════════════════════════════════════════════════════
 
+
 def main():
     """
     主迴圈（Game Loop）。
+
 
     標準 Game Loop 結構：
       while running:
@@ -1073,6 +1253,7 @@ def main():
         2. 更新狀態（update）         ← 動畫、計時器、AI
         3. 繪製畫面（draw）           ← 清空→畫背景→畫角色→畫 UI
         4. 更新顯示（flip）           ← 雙緩衝翻轉，避免畫面撕裂
+
 
     clock.tick(60)：
       限制主迴圈每秒最多執行 60 次（60 FPS）。
@@ -1084,16 +1265,20 @@ def main():
     scene   = None
     running = True
 
+
     def _start_game():
         nonlocal state, scene
         state = "playing"
         scene = GameScene()
 
+
     menu.on_start = _start_game
+
 
     while running:
         clock.tick(FPS)
         mouse_pos = pygame.mouse.get_pos()
+
 
         if state == "menu":
             for event in pygame.event.get():
@@ -1107,15 +1292,20 @@ def main():
             menu.update()
             menu.draw(screen)
 
+
         else:
             running = scene.handle_events()
             scene.update()
             scene.draw()
 
+
         pygame.display.flip()   # 雙緩衝翻轉：把背景 buffer 顯示到螢幕
+
 
     pygame.quit()
     sys.exit()
+
+
 
 
 if __name__ == "__main__":

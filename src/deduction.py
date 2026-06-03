@@ -292,40 +292,41 @@ class DeductionScreen:
 
     # ── 事件處理 ─────────────────────────────────────────────
 
-    def handle_event(self, event: pygame.event.Event,
-                     mouse_pos: tuple) -> bool:
+    def handle_event(self, event, mouse_pos):
         """
-        處理 pygame 事件。回傳 True 表示事件已消費。
-        必須在 GameScene 的事件迴圈中最高優先呼叫（全螢幕時蓋住所有其他互動）。
+        推理畫布的事件處理。
+        只有在畫布真正開啟（self.is_open 為 True）時，才去消費與攔截事件。
         """
-        if not self._open:
+        # 1. 關鍵防禦：如果畫布目前是關閉的，直接回傳 False，讓事件穿透給 main.py
+        if not self.is_open:
             return False
 
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            return self._on_lclick(mouse_pos)
+        # 2. 處理滑鼠點擊事件（修正版：確實執行點擊邏輯）
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:  # 左鍵點擊
+                # 【關鍵修正】必須在這裡呼叫並回傳 _on_lclick，才會執行叉叉按鈕與節點的碰撞檢查！
+                return self._on_lclick(mouse_pos)
 
-        if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-            if self._dragging:
-                self._dragging.stop_drag()
-                self._dragging = None
-            return True
+        # 3. 處理鍵盤事件（必須包裹在 event.type == pygame.KEYDOWN 內部）
+        if event.type == pygame.KEYDOWN:
+            
+            # 按 ESC 鍵：關閉推理畫布
+            if event.key == pygame.K_ESCAPE:
+                self.close()
+                return True
+                
+            # 按 D 鍵：關閉推理畫布（判定大小寫）
+            elif event.key == pygame.K_d or (hasattr(event, 'unicode') and event.unicode in ('d', 'D')):
+                self.close()
+                return True
+                
+            # 按 F11 鍵：切換全螢幕
+            elif event.key == pygame.K_F11:
+                pygame.display.toggle_fullscreen()
+                return True
 
-        if event.type == pygame.MOUSEMOTION:
-            # 拖曳更新節點位置
-            if self._dragging:
-                self._dragging.update_drag(mouse_pos)
-            self._rubber_end = mouse_pos
-            return True
-
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            self.close()
-            return True
-        
-        elif event.key == pygame.K_F1:  
-            global DEBUG_HITBOX
-            DEBUG_HITBOX = not DEBUG_HITBOX   # 每按一次翻轉
-
-        return False   # 其他事件（如鍵盤非 ESC）不消費
+        # 4. 其他沒處理到的事件（如滑鼠移動或放開）回傳 False
+        return False
 
     def _on_lclick(self, pos: tuple) -> bool:
         """左鍵點擊邏輯。"""
