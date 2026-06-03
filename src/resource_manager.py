@@ -78,13 +78,11 @@ class ResourceManager:
 
     # ── 音效資源定義表 ────────────────────────────────────────
     SOUND_MANIFEST = {
-        "sfx_click"         : "sfx_click.wav",
-        "sfx_item_get"      : "sfx_item_get.wav",
         "sfx_dialogue_open" : "sfx_dialogue_open.wav",
-        "sfx_wrong_item"    : "sfx_wrong_item.wav",   # 出示錯誤證物
-        "sfx_clue_found"    : "sfx_clue_found.wav",   # 發現新線索
-        "sfx_deduction_ok"  : "sfx_deduction_ok.wav", # 推理成功
-        "sfx_deduction_fail": "sfx_deduction_fail.wav",
+        "sfx_wrong_item"    : "sfx_wrong_item.wav",
+        "sfx_clue_found"    : "sfx_clue_found.wav",
+        "sfx_stage_unlock"  : "sfx_stage_unlock.wav",
+        "sfx_lab_analysis"  : "sfx_lab_analysis.wav",
     }
 
     # ── 字型資源定義表 ────────────────────────────────────────
@@ -176,6 +174,9 @@ class ResourceManager:
             return sfx
         except FileNotFoundError:
             print(f"[ResourceManager] 警告：音效檔案不存在 '{path}'（跳過）")
+            return None
+        except Exception as e:
+            print(f"[ResourceManager] 警告：音效載入失敗 '{path}'：{e}（跳過）")
             return None
 
     def play_sound(self, name: str, volume: float = 1.0):

@@ -623,7 +623,7 @@ class GameScene:
         name = SCENES.get(scene_id, {}).get("name", scene_id)
         self._notif_text  = f"新場景解鎖　{name}"
         self._notif_timer = NOTIF_DURATION
-        self.rm.play_sound("sfx_clue_found")
+        self.rm.play_sound("sfx_stage_unlock")
         if scene_id == "final" and not self.gs.has_flag("final_intro_shown"):
             self.dialogue_box.open("final_stage_intro", npc=None)
             self.gs.set_flag("final_intro_shown")
