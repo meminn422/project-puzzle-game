@@ -102,7 +102,7 @@ STUDY_ITEM_ZONES = [
 
 # 辦公室道具拾取區域 (x, y, w, h, item_id, 旁白節點)
 OFFICE_ITEM_ZONES = [
-    (1100, 700, 60, 40, "item_005_key",   None),               # 右下角
+    (1100, 648, 60, 40, "item_005_key",   None),               # 右下角
     ( 280, 600, 60, 38, "item_008_paint", "office_find_paint"), # 往下
     ( 950, 415, 60, 38, "item_007_will",  "office_find_will"),  # 右側桌面
     ( 455, 650, 60, 38, "item_006_heel",  "office_find_heel"),  # 往下
@@ -419,9 +419,13 @@ def draw_hud(surface, rm, gs, npcs, show_hint, hint_text=""):
                      (0, HEIGHT - BOTTOM_H), (W, HEIGHT - BOTTOM_H), 1)
 
 
-    tips = "D：推理畫布    1-4：切換場景（測試用）    Q：取得本場道具（測試用）"
-    tl = font_tiny.render(tips, True, (80, 70, 50))
-    surface.blit(tl, (W // 2 - tl.get_width() // 2, HEIGHT - BOTTOM_H + 10))
+    key_surf  = font_tiny.render("D", True, (200, 175, 100))
+    sep_surf  = font_tiny.render("  推理畫布", True, (130, 120, 95))
+    tip_w     = key_surf.get_width() + sep_surf.get_width()
+    tip_x     = W // 2 - tip_w // 2
+    tip_y     = HEIGHT - BOTTOM_H + (BOTTOM_H - key_surf.get_height()) // 2
+    surface.blit(key_surf, (tip_x, tip_y))
+    surface.blit(sep_surf, (tip_x + key_surf.get_width(), tip_y))
 
 
 
@@ -1075,22 +1079,29 @@ class GameScene:
 
 
     def _draw_study_hints(self):
-        alpha = 180 + int(60 * math.sin(pygame.time.get_ticks() / 300))
+        mx, my = pygame.mouse.get_pos()
         for x, y, w, h, item_id, _ in STUDY_ITEM_ZONES:
             if self.gs.has_item(item_id):
                 continue
-            surf = pygame.Surface((w, h), pygame.SRCALPHA)
-            surf.fill((255, 230, 100, 35))
-            pygame.draw.rect(surf, (255, 220, 80, alpha),
-                             surf.get_rect(), 2, border_radius=4)
-            screen.blit(surf, (x, y))
             img_key = ITEM_DATABASE.get(item_id, {}).get("image_key")
             img = self.rm.image(img_key) if img_key else None
             if img:
                 screen.blit(pygame.transform.scale(img, (w, h)), (x, y))
             else:
                 self._draw_scene_item_icon(screen, item_id, x, y, w, h)
+            if pygame.Rect(x, y, w, h).collidepoint(mx, my):
+                self._draw_item_glow(screen, x, y, w, h)
 
+
+    def _draw_item_glow(self, surface: pygame.Surface,
+                        x: int, y: int, w: int, h: int):
+        """滑鼠 hover 時在道具周圍繪製淡金色光暈。"""
+        for pad in range(12, 0, -3):
+            a = int(55 * (1 - pad / 14))
+            glow = pygame.Surface((w + pad * 2, h + pad * 2), pygame.SRCALPHA)
+            pygame.draw.rect(glow, (200, 165, 60, a),
+                             glow.get_rect(), border_radius=6)
+            surface.blit(glow, (x - pad, y - pad))
 
     def _draw_scene_item_icon(self, surface: pygame.Surface,
                               item_id: str, x: int, y: int, w: int, h: int):
@@ -1198,7 +1209,7 @@ class GameScene:
 
         font  = self.rm.font("default", 20)
         label = font.render(self._notif_text, True, (255, 235, 120))
-        w     = label.get_width() + 48
+        w     = label.get_width() + 64
         x     = WIDTH // 2 - w // 2
         top   = 46 + y   # HUD 高度 38px 下方
 
@@ -1217,22 +1228,19 @@ class GameScene:
 
 
     def _draw_office_hints(self):
-        """辦公室場景：在可拾取區域畫閃爍高亮提示。"""
-        alpha = 180 + int(60 * math.sin(pygame.time.get_ticks() / 300))
+        """辦公室場景：道具圖示 + hover 時金色光暈。"""
+        mx, my = pygame.mouse.get_pos()
         for x, y, w, h, item_id, _ in OFFICE_ITEM_ZONES:
             if self.gs.has_item(item_id):
                 continue
-            surf = pygame.Surface((w, h), pygame.SRCALPHA)
-            surf.fill((255, 230, 100, 35))
-            pygame.draw.rect(surf, (255, 220, 80, alpha),
-                             surf.get_rect(), 2, border_radius=4)
-            screen.blit(surf, (x, y))
             img_key = ITEM_DATABASE.get(item_id, {}).get("image_key")
             img = self.rm.image(img_key) if img_key else None
             if img:
                 screen.blit(pygame.transform.scale(img, (w, h)), (x, y))
             else:
                 self._draw_scene_item_icon(screen, item_id, x, y, w, h)
+            if pygame.Rect(x, y, w, h).collidepoint(mx, my):
+                self._draw_item_glow(screen, x, y, w, h)
 
 
 

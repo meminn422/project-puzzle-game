@@ -711,7 +711,7 @@ class DialogueBox:
         hint.fill((45, 42, 15, int(alpha * 0.88)))
         pygame.draw.rect(hint, (*NOTE_YELLOW[:3], alpha),
                          hint.get_rect(), 2, border_radius=8)
-        lbl = font.render("📒 筆記本已更新", True, (*NOTE_YELLOW[:3], alpha))
+        lbl = font.render("★ 筆記本已更新", True, (*NOTE_YELLOW[:3], alpha))
         hint.blit(lbl, (10, 9))
         surface.blit(hint, (note_x, note_y))
 

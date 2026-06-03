@@ -446,6 +446,7 @@ class DeductionScreen:
         fn  = self.rm.font("default", 17)   # 節點文字
         fu  = self.rm.font("default", 16)   # UI 文字
         fs  = self.rm.font("default", 14)   # 小文字
+        fd  = self.rm.font("default", 17)   # 線索說明內文
         ft  = self.rm.font("default", 20)   # 標題
 
         # ── 整體背景 ──
@@ -485,7 +486,7 @@ class DeductionScreen:
             node.draw(surface, fn, hover=(node is self._hover))
 
         # ── 右側面板內容 ──
-        self._draw_panel(surface, ft, fu, fs)
+        self._draw_panel(surface, ft, fu, fs, fd)
 
         # ── 關閉按鈕 ──
         pygame.draw.rect(surface, (22, 18, 6), self._close_btn, border_radius=8)
@@ -506,8 +507,10 @@ class DeductionScreen:
             ts = fs.render(t, True, (90, 110, 155))
             surface.blit(ts, (10, self.H - 52 + i * 20))
 
-    def _draw_panel(self, surface, ft, fu, fs):
-        """繪製右側資訊面板。"""
+    def _draw_panel(self, surface, ft, fu, fs, fd=None):
+        """繪製右側資訊面板。fd 為線索說明內文字型，預設與 fs 相同。"""
+        if fd is None:
+            fd = fs
         px = self.panel_x + 14
         py = 14
 
@@ -536,18 +539,18 @@ class DeductionScreen:
             def draw_section(label, text, label_color, text_color):
                 nonlocal py
                 lbl = fs.render(label, True, label_color)
-                surface.blit(lbl, (px, py)); py += 20
+                surface.blit(lbl, (px, py)); py += 22
                 words = text
                 while words:
                     chunk = ""
                     for ch in words:
-                        if fs.size(chunk + ch)[0] > max_w:
+                        if fd.size(chunk + ch)[0] > max_w:
                             break
                         chunk += ch
-                    line_surf = fs.render(chunk, True, text_color)
-                    surface.blit(line_surf, (px + 8, py)); py += 18
+                    line_surf = fd.render(chunk, True, text_color)
+                    surface.blit(line_surf, (px + 8, py)); py += 21
                     words = words[len(chunk):]
-                py += 6
+                py += 8
 
             draw_section("◆ 取得方式",
                          f"【{info['scene']}】{info['source']}",

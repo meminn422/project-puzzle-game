@@ -162,46 +162,97 @@ class EndingScreen:
 
         f  = self._frame
         fn = self.rm.font("default", 17)
-        fm = self.rm.font("default", 21)
-        fl = self.rm.font("default", 28)
-        ft = self.rm.font("default", 40)
+        fm = self.rm.font("default", 20)
+        fl = self.rm.font("default", 32)
+        ft = self.rm.font("default", 44)
         fs = self.rm.font("default", 13)
 
-        # ── 黑底淡入 ─────────────────────────────────────────────
+        # 黑底淡入
         bg_alpha = min(255, int(255 * f / _PH_FADE))
         bg = pygame.Surface((self.W, self.H))
         bg.fill((6, 8, 16))
         bg.set_alpha(bg_alpha)
         surface.blit(bg, (0, 0))
-
         if f < _PH_FADE:
             return
 
-        # 之後的內容統一淡入 alpha
         content_alpha = min(255, int(255 * (f - _PH_FADE) / _PH_HEADER))
         cx = self.W // 2
-        y  = 38
+        GOLD      = (180, 150, 80)
+        GOLD_DIM  = (120, 100, 55)
+        TEXT_MAIN = (232, 220, 200)
+        TEXT_DIM  = (138, 122, 96)
 
-        # ── 標題 ─────────────────────────────────────────────────
-        self._blit_a(surface, ft.render("案件告破", True, (255, 200, 75)),
-                     cx, y, content_alpha, anchor="center")
-        y += 52
+        def draw_diamond(x, y, size, color, alpha=200):
+            s = pygame.Surface((size*2, size*2), pygame.SRCALPHA)
+            pts = [(size, 0), (size*2, size), (size, size*2), (0, size)]
+            pygame.draw.polygon(s, (*color, alpha), pts)
+            surface.blit(s, (x - size, y - size))
 
-        self._blit_a(surface, fn.render("Whispers of the Silent Will", True, (150, 155, 195)),
-                     cx, y, content_alpha, anchor="center")
-        y += 26
+        def draw_corner(x, y, dx, dy, alpha=180):
+            length = 40
+            s = pygame.Surface((length+2, length+2), pygame.SRCALPHA)
+            pygame.draw.line(s, (*GOLD, alpha), (1 if dx>0 else length, 1 if dy>0 else length),
+                             (length if dx>0 else 1, 1 if dy>0 else length), 2)
+            pygame.draw.line(s, (*GOLD, alpha), (1 if dx>0 else length, 1 if dy>0 else length),
+                             (1 if dx>0 else length, length if dy>0 else 1), 2)
+            surface.blit(s, (x if dx>0 else x-length, y if dy>0 else y-length))
 
-        self._blit_a(surface, fn.render("兇手：管家・老陳　｜　動機：遺囑除名", True, (195, 175, 155)),
-                     cx, y, content_alpha, anchor="center")
+        # 四角 L 形裝飾
+        m = 24
+        draw_corner(m, m,              1,  1, alpha=int(content_alpha*0.7))
+        draw_corner(self.W-m, m,      -1,  1, alpha=int(content_alpha*0.7))
+        draw_corner(m, self.H-m,       1, -1, alpha=int(content_alpha*0.7))
+        draw_corner(self.W-m, self.H-m,-1, -1, alpha=int(content_alpha*0.7))
+
+        y = 52
+
+        # 頂部菱形 + 對稱橫線
+        line_w = 200
+        dl = pygame.Surface((line_w, 2), pygame.SRCALPHA)
+        dl.fill((*GOLD_DIM, int(content_alpha * 0.5)))
+        surface.blit(dl, (cx - line_w - 18, y + 6))
+        surface.blit(dl, (cx + 18, y + 6))
+        draw_diamond(cx, y + 8, 7, GOLD, alpha=int(content_alpha * 0.9))
+
+        y += 28
+
+        # 標題「案件告破」
+        title_surf = ft.render("案件告破", True, (232, 200, 100))
+        title_surf.set_alpha(content_alpha)
+        surface.blit(title_surf, (cx - title_surf.get_width()//2, y))
+        y += 58
+
+        # 英文副標
+        en_surf = fs.render("Whispers of the Silent Will", True, (100, 90, 65))
+        en_surf.set_alpha(content_alpha)
+        surface.blit(en_surf, (cx - en_surf.get_width()//2, y))
+        y += 24
+
+        # 兇手資訊細框
+        info_text = "兇手：管家・老陳　｜　動機：遺囑除名"
+        it = fn.render(info_text, True, (195, 180, 148))
+        iw = it.get_width() + 40
+        ih = 28
+        info_surf = pygame.Surface((iw, ih), pygame.SRCALPHA)
+        info_surf.fill((16, 13, 5, int(content_alpha * 0.85)))
+        pygame.draw.rect(info_surf, (*GOLD_DIM, int(content_alpha * 0.6)),
+                         info_surf.get_rect(), 1, border_radius=2)
+        it.set_alpha(content_alpha)
+        info_surf.blit(it, (20, 5))
+        surface.blit(info_surf, (cx - iw//2, y))
         y += 44
 
-        self._hline(surface, cx, y, 500, content_alpha)
+        # 分隔線（雙線）
+        self._hline(surface, cx, y,   500, int(content_alpha * 0.5))
+        self._hline(surface, cx, y+3, 500, int(content_alpha * 0.2))
         y += 18
 
-        # ── 評分明細 ─────────────────────────────────────────────
-        self._blit_a(surface, fm.render("推理評分", True, (175, 200, 240)),
-                     cx, y, content_alpha, anchor="center")
-        y += 34
+        # 評分標題（帶間距菱形）
+        score_label = fm.render("◆  推  理  評  分  ◆", True, GOLD_DIM)
+        score_label.set_alpha(content_alpha)
+        surface.blit(score_label, (cx - score_label.get_width()//2, y))
+        y += 36
 
         col_label = cx - 210
         col_pts   = cx + 185
@@ -212,52 +263,76 @@ class EndingScreen:
                 break
             row_alpha = min(255, int(255 * (f - row_start) / _PH_ROW))
 
-            icon   = "✓" if achieved else "✗"
-            ic     = (95, 225, 135) if achieved else (200, 80, 80)
-            lc     = (210, 218, 235) if achieved else (120, 120, 142)
-            pts_s  = f"+{pts}" if achieved else "+0"
+            icon  = "+" if achieved else "-"
+            ic    = (95, 215, 130) if achieved else (185, 70, 70)
+            lc    = (205, 195, 175) if achieved else (100, 92, 78)
+            pts_s = f"+{pts}" if achieved else "+0"
 
             self._blit_a(surface, fn.render(icon,  True, ic), col_label,      y, row_alpha)
-            self._blit_a(surface, fn.render(label, True, lc), col_label + 26, y, row_alpha)
+            self._blit_a(surface, fn.render(label, True, lc), col_label + 22, y, row_alpha)
             self._blit_a(surface, fn.render(pts_s, True, ic), col_pts,        y, row_alpha)
-            y += 27
 
             if not achieved:
                 hint = _HINTS.get(flag, "")
                 if hint:
-                    self._blit_a(surface, fs.render("→ " + hint, True, (100, 100, 125)),
-                                 col_label + 26, y, row_alpha)
-                    y += 18
+                    hs = fs.render("→ " + hint, True, (88, 78, 58))
+                    hs.set_alpha(row_alpha)
+                    surface.blit(hs, (col_label + 22, y + 20))
+                    y += 20
 
-        y += 10
+            y += 28
+
+            sep = pygame.Surface((col_pts - col_label + 40, 1), pygame.SRCALPHA)
+            sep.fill((42, 36, 18, int(row_alpha * 0.6)))
+            surface.blit(sep, (col_label, y - 2))
+
+        y += 6
+
+        # 總分區域
         if f >= _T_ROWS_END:
-            self._hline(surface, cx, y, 500, content_alpha)
-            y += 18
+            self._hline(surface, cx, y,   500, int(content_alpha * 0.5))
+            self._hline(surface, cx, y+3, 500, int(content_alpha * 0.2))
+            y += 22
 
-        # ── 總分計數 ─────────────────────────────────────────────
-        if f >= _T_ROWS_END:
-            max_pts  = sum(p for _, p, _ in _DEDUCTION_SCORES) + _TRUST_MAX_BONUS
-            score_str = f"總分　　{self._score_shown} / {max_pts}"
-            sc = fl.render(score_str, True, (255, 228, 110))
-            self._blit_a(surface, sc, cx, y, content_alpha, anchor="center")
-            y += 58
+            max_pts   = sum(p for _, p, _ in _DEDUCTION_SCORES) + _TRUST_MAX_BONUS
+            label_s   = fm.render("總　分", True, TEXT_DIM)
+            score_num = fl.render(str(self._score_shown), True, (232, 200, 100))
+            slash_s   = fm.render(f"/ {max_pts}", True, (80, 70, 48))
 
-        # ── 結局稱號 + 按鈕 ──────────────────────────────────────
+            total_w = label_s.get_width() + 24 + score_num.get_width() + 12 + slash_s.get_width()
+            sx = cx - total_w // 2
+
+            self._blit_a(surface, label_s,   sx, y + 6, content_alpha)
+            sx += label_s.get_width() + 24
+            self._blit_a(surface, score_num, sx, y,     content_alpha)
+            sx += score_num.get_width() + 12
+            self._blit_a(surface, slash_s,   sx, y + 8, content_alpha)
+            y += 56
+
+        # 結局稱號
         if f >= _T_COUNT_END:
-            stars_str = "★" * self._ending_stars + "  " + self._ending_title + "  " + "★" * self._ending_stars
-            rs = fl.render(stars_str, True, self._ending_color)
-            self._blit_a(surface, rs, cx, y, content_alpha, anchor="center")
+            title_w = 240
+            draw_diamond(cx - title_w//2, y + 12, 5, GOLD, alpha=int(content_alpha * 0.8))
+            draw_diamond(cx + title_w//2, y + 12, 5, GOLD, alpha=int(content_alpha * 0.8))
+
+            rs = fl.render(self._ending_title, True, self._ending_color)
+            self._blit_a(surface, rs, cx, y - 4, content_alpha, anchor="center")
+            y += 44
 
             mx, my = pygame.mouse.get_pos()
             hover  = self._btn.collidepoint((mx, my))
-            bc  = (85, 62, 115) if hover else (50, 38, 72)
-            brd = (205, 165, 235) if hover else (138, 108, 178)
-            pygame.draw.rect(surface, bc,  self._btn, border_radius=10)
-            pygame.draw.rect(surface, brd, self._btn, 2, border_radius=10)
-            bl = fm.render("結束遊戲", True, (230, 215, 255))
+            bc  = (28, 22, 6) if hover else (14, 11, 3)
+            brd = (210, 178, 90) if hover else (180, 150, 80)
+            pygame.draw.rect(surface, bc,  self._btn, border_radius=4)
+            pygame.draw.rect(surface, brd, self._btn, 1, border_radius=4)
+            pygame.draw.rect(surface, brd,
+                             (self._btn.x + 1, self._btn.y + 1,
+                              3, self._btn.height - 2), border_radius=2)
+            bl = fm.render("結束遊戲", True,
+                           (240, 225, 185) if hover else TEXT_MAIN)
             bl.set_alpha(content_alpha)
-            surface.blit(bl, (self._btn.centerx - bl.get_width() // 2,
-                               self._btn.centery - bl.get_height() // 2))
+            surface.blit(bl, (self._btn.centerx - bl.get_width()//2,
+                               self._btn.centery - bl.get_height()//2))
 
     # ── 工具方法 ─────────────────────────────────────────────────
 

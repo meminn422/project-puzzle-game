@@ -151,6 +151,7 @@ class MenuScreen:
     def draw(self, surface: pygame.Surface):
         surface.fill((4, 4, 10))
         self._draw_scanlines(surface)
+        self._draw_frame(surface)
         self._draw_title(surface)
         self._draw_buttons(surface)
         self._draw_footer(surface)
@@ -165,58 +166,133 @@ class MenuScreen:
             s.fill((0, 0, 0, 28))
             surface.blit(s, (0, y))
 
+    def _draw_frame(self, surface):
+        GOLD = (180, 150, 80)
+        W, H = self.W, self.H
+        m = 22
+        L = 40
+
+        def corner(x, y, dx, dy):
+            pygame.draw.line(surface, GOLD, (x, y), (x + dx*L, y), 2)
+            pygame.draw.line(surface, GOLD, (x, y), (x, y + dy*L), 2)
+
+        corner(m,     m,      1,  1)
+        corner(W-m,   m,     -1,  1)
+        corner(m,     H-m,    1, -1)
+        corner(W-m,   H-m,   -1, -1)
+
+        def hline(y, alpha=50):
+            s = pygame.Surface((W - m*2, 1), pygame.SRCALPHA)
+            s.fill((*GOLD, alpha))
+            surface.blit(s, (m, y))
+
+        hline(m + 16, 45)
+        hline(H - m - 16, 45)
+
+        def vline(x, y1, y2, alpha=55):
+            s = pygame.Surface((1, y2 - y1), pygame.SRCALPHA)
+            s.fill((*GOLD, alpha))
+            surface.blit(s, (x, y1))
+
+        vline(m + 16, m + 16, int(H * 0.42), 48)
+        vline(W - m - 16, m + 16, int(H * 0.42), 48)
+
     def _draw_title(self, surface):
         f   = self._frame
         cx  = self.W // 2
-        ft  = self.rm.font("default", 42)
+        ft  = self.rm.font("default", 40)
         fm  = self.rm.font("default", 22)
-        fsm = self.rm.font("default", 17)
+        fsm = self.rm.font("default", 16)
+        GOLD     = (180, 150, 80)
+        GOLD_DIM = (120, 100, 55)
 
-        # ── 打字機英文標題 ──
-        chars = min(len(_TITLE_EN), f // _CHAR_SPEED)
-        shown = _TITLE_EN[:chars]
+        ty = int(self.H * 0.26)
+
+        # 標題上方菱形 + 對稱橫線
+        if f >= _T_SUBTITLE:
+            a = min(255, int(255 * (f - _T_SUBTITLE) / 25))
+            lw = 260
+            ls = pygame.Surface((lw, 1), pygame.SRCALPHA)
+            ls.fill((*GOLD_DIM, int(a * 0.4)))
+            surface.blit(ls, (cx - lw - 16, ty - 18))
+            surface.blit(ls, (cx + 16,      ty - 18))
+            ds = pygame.Surface((16, 16), pygame.SRCALPHA)
+            pts = [(8,0),(16,8),(8,16),(0,8)]
+            pygame.draw.polygon(ds, (*GOLD, int(a * 0.7)), pts)
+            surface.blit(ds, (cx - 8, ty - 26))
+
+        # 打字機英文標題
+        chars  = min(len(_TITLE_EN), f // _CHAR_SPEED)
+        shown  = _TITLE_EN[:chars]
         cursor = "_" if (pygame.time.get_ticks() // 420) % 2 == 0 else " "
         if chars < len(_TITLE_EN):
             shown += cursor
 
-        title_surf = ft.render(shown, True, (238, 215, 158))
-        ty = int(self.H * 0.26)
+        title_surf = ft.render(shown, True, (232, 200, 100))
         surface.blit(title_surf, (cx - title_surf.get_width() // 2, ty))
 
-        # ── 副標題（中文）──
+        # 中文副標
         if f >= _T_SUBTITLE:
             a  = min(255, int(255 * (f - _T_SUBTITLE) / 25))
-            zh = fm.render(_TITLE_ZH, True, (200, 178, 120))
+            zh = fm.render(_TITLE_ZH, True, (200, 168, 90))
             zh.set_alpha(a)
-            surface.blit(zh, (cx - zh.get_width() // 2, ty + 56))
+            surface.blit(zh, (cx - zh.get_width() // 2, ty + 54))
 
-        # ── 副語 ──
+        # 副語
         if f >= _T_TAGLINE:
             a  = min(255, int(255 * (f - _T_TAGLINE) / 25))
-            tg = fsm.render(_TAGLINE, True, (155, 138, 96))
+            tg = fsm.render(_TAGLINE, True, (118, 104, 65))
             tg.set_alpha(a)
-            surface.blit(tg, (cx - tg.get_width() // 2, ty + 90))
+            surface.blit(tg, (cx - tg.get_width() // 2, ty + 88))
 
-        # ── 裝飾線 ──
-        if f >= _T_TAGLINE:
-            a = min(255, int(255 * (f - _T_TAGLINE) / 30))
-            for dx, w in [(-160, 110), (50, 110)]:
-                s = pygame.Surface((w, 1), pygame.SRCALPHA)
-                s.fill((180, 150, 80, a))
-                surface.blit(s, (cx + dx, ty + 119))
+            # 副語下方裝飾線 + 小菱形
+            lw2 = 160
+            ls2 = pygame.Surface((lw2, 1), pygame.SRCALPHA)
+            ls2.fill((*GOLD_DIM, int(a * 0.35)))
+            surface.blit(ls2, (cx - lw2 - 22, ty + 122))
+            surface.blit(ls2, (cx + 22,        ty + 122))
+            ds2 = pygame.Surface((10, 10), pygame.SRCALPHA)
+            pts2 = [(5,0),(10,5),(5,10),(0,5)]
+            pygame.draw.polygon(ds2, (*GOLD_DIM, int(a * 0.55)), pts2)
+            surface.blit(ds2, (cx - 5, ty + 117))
 
     def _draw_buttons(self, surface):
         if self._frame < _T_BUTTONS:
             return
         a  = min(255, int(255 * (self._frame - _T_BUTTONS) / 30))
-        fn = self.rm.font("default", 24)
-        self._btn_start.draw(surface, fn, a)
-        self._btn_howto.draw(surface, fn, a)
+        fn = self.rm.font("default", 18)
+        GOLD     = (180, 150, 80)
+        GOLD_DIM = (100, 82, 42)
+
+        for i, btn in enumerate([self._btn_start, self._btn_howto]):
+            mx, my = pygame.mouse.get_pos()
+            hover  = btn.rect.collidepoint((mx, my))
+            is_main = (i == 0)
+
+            bc  = (18, 14, 4) if hover else (10, 8, 2)
+            brd = GOLD if is_main else GOLD_DIM
+
+            tmp = pygame.Surface((btn.W, btn.H), pygame.SRCALPHA)
+            tmp.fill((*bc, 220))
+            pygame.draw.rect(tmp, (*brd, 200),
+                             tmp.get_rect(), 1, border_radius=3)
+            pygame.draw.rect(tmp, (*brd, 255),
+                             (0, 0, 3, btn.H), border_radius=2)
+
+            lbl_col = (232, 215, 175) if (hover and is_main) else \
+                      (200, 185, 148) if is_main else \
+                      (155, 135, 88)  if hover else \
+                      (120, 105, 68)
+            lbl = fn.render(btn.label, True, lbl_col)
+            tmp.blit(lbl, (btn.W//2 - lbl.get_width()//2,
+                           btn.H//2 - lbl.get_height()//2))
+            tmp.set_alpha(a)
+            surface.blit(tmp, btn.rect.topleft)
 
     def _draw_footer(self, surface):
-        fn = self.rm.font("default", 13)
-        ft = fn.render("v0.1  ·  Whispers of the Silent Will", True, (68, 65, 88))
-        surface.blit(ft, (self.W // 2 - ft.get_width() // 2, self.H - 24))
+        fn = self.rm.font("default", 12)
+        ft = fn.render("v0.1  ·  Whispers of the Silent Will", True, (55, 48, 30))
+        surface.blit(ft, (self.W // 2 - ft.get_width() // 2, self.H - 22))
 
     def _draw_howto(self, surface):
         pw, ph = 860, 640
