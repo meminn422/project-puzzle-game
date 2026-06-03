@@ -307,6 +307,17 @@ class DeductionScreen:
                 # 【關鍵修正】必須在這裡呼叫並回傳 _on_lclick，才會執行叉叉按鈕與節點的碰撞檢查！
                 return self._on_lclick(mouse_pos)
 
+        if event.type == pygame.MOUSEMOTION:
+            if self._dragging:
+                self._dragging.update_drag(mouse_pos)
+                return True
+
+        if event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1 and self._dragging:
+                self._dragging.stop_drag()
+                self._dragging = None
+                return True
+
         # 3. 處理鍵盤事件（必須包裹在 event.type == pygame.KEYDOWN 內部）
         if event.type == pygame.KEYDOWN:
             
@@ -419,6 +430,9 @@ class DeductionScreen:
         # 更新 hover 節點
         self._hover = (self._node_at(mouse_pos)
                        if not self._dragging else None)
+        # 更新橡皮筋線終點（當選取節點但未拖曳時）
+        if self._selected and not self._dragging:
+            self._rubber_end = mouse_pos
         if self._result_timer > 0:
             self._result_timer -= 1
 
