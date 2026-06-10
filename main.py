@@ -489,6 +489,84 @@ class SceneButton:
 
 
 # ══════════════════════════════════════════════════════════════
+#  GameOverScreen：遊戲失敗畫面
+# ══════════════════════════════════════════════════════════════
+
+
+class GameOverScreen:
+    """
+    GAME OVER 畫面：老陳信任度歸零，偵探被逐出調查。
+    淡入動畫 → 標題 + 說明文字 → 離開按鈕。
+    """
+
+    def __init__(self, width: int, height: int):
+        self.width    = width
+        self.height   = height
+        self.is_open  = False
+        self.on_exit  = None          # 回呼：點擊「離開遊戲」
+        self._frame   = 0
+        self._btn_exit = pygame.Rect(0, 0, 0, 0)   # 在 draw() 時設定實際位置
+
+    def open(self):
+        self.is_open = True
+        self._frame  = 0
+
+    def update(self):
+        if self.is_open:
+            self._frame = min(255, self._frame + 5)
+
+    def handle_event(self, event: pygame.event.Event, mouse_pos: tuple) -> bool:
+        if not self.is_open:
+            return False
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self._btn_exit.collidepoint(mouse_pos):
+                if self.on_exit:
+                    self.on_exit()
+                return True
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            if self.on_exit:
+                self.on_exit()
+            return True
+        return True   # 全螢幕攔截所有事件
+
+    def draw(self, surface: pygame.Surface):
+        if not self.is_open:
+            return
+        rm    = ResourceManager.instance()
+        alpha = self._frame
+        cx    = self.width  // 2
+        cy    = self.height // 2
+
+        # 黑色覆蓋
+        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, min(200, alpha)))
+        surface.blit(overlay, (0, 0))
+
+        if alpha < 80:
+            return
+
+        # 紅色大標題
+        title = rm.font("default", 72).render("案件失敗", True, (210, 50, 50))
+        surface.blit(title, (cx - title.get_width() // 2, cy - 160))
+
+        # 副標題
+        for i, line in enumerate([
+            "老陳已對你失去耐心，拒絕一切合作。",
+            "案件懸而未決，真相永埋黑暗。",
+        ]):
+            s = rm.font("default", 26).render(line, True, (190, 160, 140))
+            surface.blit(s, (cx - s.get_width() // 2, cy - 40 + i * 38))
+
+        # 離開按鈕
+        self._btn_exit = pygame.Rect(cx - 90, cy + 70, 180, 50)
+        pygame.draw.rect(surface, (50, 15, 15),  self._btn_exit, border_radius=8)
+        pygame.draw.rect(surface, (180, 55, 55), self._btn_exit, 2, border_radius=8)
+        lbl = rm.font("default", 24).render("離開遊戲", True, (230, 170, 170))
+        surface.blit(lbl, (self._btn_exit.centerx - lbl.get_width() // 2,
+                           self._btn_exit.centery - lbl.get_height() // 2))
+
+
+# ══════════════════════════════════════════════════════════════
 #  GameScene：主場景協調器
 # ══════════════════════════════════════════════════════════════
 
@@ -589,10 +667,14 @@ class GameScene:
         # UI 狀態
         self._hover_npc : NPC | None = None    # 目前滑鼠 hover 的 NPC
 
-
         # 場景解鎖通知
         self._notif_text  = ""
         self._notif_timer = 0   # 倒數幀數，0 = 不顯示
+
+        # 狀態機回呼（由 main() 注入）
+        self.on_win      = None   # 勝利條件達成時呼叫
+        self.on_gameover = None   # 老陳信任度歸零時呼叫
+        self._gameover_triggered = False
 
 
     # ── 回呼函式 ─────────────────────────────────────────────
@@ -635,6 +717,8 @@ class GameScene:
         if self.gs.has_flag("trigger_ending_screen"):
             self.gs.clear_flag("trigger_ending_screen")
             self.ending_screen.open()
+            if self.on_win:
+                self.on_win()
 
 
     # ── 取得目前場景的 NPC 列表 ──────────────────────────────
@@ -879,6 +963,12 @@ class GameScene:
         self.ending_screen.update()
         if self._notif_timer > 0:
             self._notif_timer -= 1
+        # 老陳信任度歸零 → GAME OVER（只觸發一次）
+        if (not self._gameover_triggered
+                and self.gs.get_trust("chen") == 0
+                and self.on_gameover):
+            self._gameover_triggered = True
+            self.on_gameover()
 
 
     # ── 繪製 ─────────────────────────────────────────────────
@@ -1267,26 +1357,39 @@ def main():
       限制主迴圈每秒最多執行 60 次（60 FPS）。
       回傳上一幀實際花費的毫秒數，可用於幀率無關的物理計算（這裡未使用）。
     """
-    # 狀態機："menu" → "playing"
-    state   = "menu"
-    menu    = MenuScreen(WIDTH, HEIGHT)
-    scene   = None
-    running = True
+    # 狀態機："menu" → "playing" → "win" / "gameover"
+    state        = "menu"      # START
+    menu         = MenuScreen(WIDTH, HEIGHT)
+    scene        = None
+    gameover_scr = GameOverScreen(WIDTH, HEIGHT)
+    running      = True
 
+    gameover_scr.on_exit = lambda: pygame.event.post(
+        pygame.event.Event(pygame.QUIT)
+    )
 
     def _start_game():
         nonlocal state, scene
-        state = "playing"
+        state = "playing"       # PLAYING
         scene = GameScene()
 
+        def _on_win():
+            nonlocal state
+            state = "win"       # WIN
+
+        def _on_gameover():
+            nonlocal state
+            state = "gameover"  # GAME OVER
+            gameover_scr.open()
+
+        scene.on_win      = _on_win
+        scene.on_gameover = _on_gameover
 
     menu.on_start = _start_game
-
 
     while running:
         clock.tick(FPS)
         mouse_pos = pygame.mouse.get_pos()
-
 
         if state == "menu":
             for event in pygame.event.get():
@@ -1300,12 +1403,20 @@ def main():
             menu.update()
             menu.draw(screen)
 
-
-        else:
+        elif state in ("playing", "win"):
+            # "playing"：正常遊戲；"win"：EndingScreen 已開啟，仍由 scene 管理
             running = scene.handle_events()
             scene.update()
             scene.draw()
 
+        elif state == "gameover":
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                    break
+                gameover_scr.handle_event(event, mouse_pos)
+            gameover_scr.update()
+            gameover_scr.draw(screen)
 
         pygame.display.flip()   # 雙緩衝翻轉：把背景 buffer 顯示到螢幕
 
